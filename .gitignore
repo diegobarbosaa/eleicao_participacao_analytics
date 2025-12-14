@@ -1,0 +1,81 @@
+# ===== PYTHON =====
+# Bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.pyc
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# pytest
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmyp.json
+
+# ===== DATA =====
+# Dados locais (não versionar datasets)
+data/
+!data/.gitkeep
+
+# Logs
+logs/
+*.log
+
+# ===== IDE =====
+# VSCode
+.vscode/
+*.code-workspace
+
+# PyCharm
+.idea/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# ===== OS =====
+# Windows
+Thumbs.db
+desktop.ini
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# ===== PROJETO ESPECÍFICO =====
+# Temporários
+*.tmp
+*.bak
+*.swp
+
+# Databases locais
+*.db
+*.sqlite
+*.duckdb
+
+# Environment variables (quando criar)
+.env
+.env.local
+.env.*.local
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
+
+# Coverage reports
+.coverage
+coverage.xml
+*.cover

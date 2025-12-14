@@ -1,0 +1,184 @@
+[project]
+name = "eleicao-participacao-analytics"
+version = "0.1.0"
+description = "Análise de participação eleitoral brasileira com arquitetura Lakehouse"
+readme = "README.md"
+authors = [
+    { name = "Diego Vanderlei", email = "diegobarbosavl@gmail.com" }
+]
+requires-python = ">=3.11"
+license = { text = "MIT" }
+keywords = ["eleições", "analytics", "lakehouse", "dados-abertos", "tse"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
+dependencies = [
+    "polars>=1.17.0",
+    "duckdb>=1.1.0",
+    "httpx>=0.27.0",
+    "structlog>=24.4.0",
+    "pydantic>=2.10.0",
+    "pydantic-settings>=2.6.0",
+    "typer>=0.15.0",
+    "rich>=13.9.0",
+    "tenacity>=9.1.2",
+    "pyarrow>=22.0.0",
+]
+
+# ===== DEPENDENCY GROUPS (NOVO PADRÃO PEP 735) =====
+[dependency-groups]
+dev = [
+    "pytest>=8.3.0",
+    "pytest-cov>=6.0.0",
+    "pytest-mock>=3.14.0",
+    "pytest-httpx>=0.30.0",
+    "ruff>=0.8.0",
+    "mypy>=1.13.0",
+    "ipython>=8.31.0",
+]
+
+test = [
+    "pytest>=8.3.0",
+    "pytest-cov>=6.0.0",
+    "pytest-mock>=3.14.0",
+    "pytest-httpx>=0.30.0",
+]
+
+lint = [
+    "ruff>=0.8.0",
+    "mypy>=1.13.0",
+]
+
+# ===== BUILD SYSTEM =====
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/participacao_eleitoral"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/src",
+    "/tests",
+    "/README.md",
+    "/pyproject.toml",
+]
+
+# ===== UV CONFIGURATION =====
+[tool.uv]
+# Workspace configuration
+[tool.uv.workspace]
+members = []
+
+# Index configuration
+[[tool.uv.index]]
+name = "pypi"
+url = "https://pypi.org/simple"
+default = true
+
+# ===== RUFF =====
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src", "tests"]
+
+exclude = [
+    ".git",
+    ".venv",
+    "__pycache__",
+    "*.egg-info",
+    ".pytest_cache",
+    ".mypy_cache",
+    ".ruff_cache",
+]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "F",   # pyflakes
+    "I",   # isort
+    "N",   # pep8-naming
+    "W",   # pycodestyle warnings
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "SIM", # flake8-simplify
+]
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["S101"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+# ===== PYTEST =====
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = [
+    "--strict-markers",
+    "--strict-config",
+    "--verbose",
+]
+markers = [
+    "unit: Testes unitários (rápidos)",
+    "integration: Testes de integração (lentos)",
+    "slow: Testes muito lentos",
+]
+
+# ===== MYPY =====
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_unused_configs = true
+disallow_any_generics = true
+disallow_subclassing_any = true
+disallow_untyped_calls = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_return_any = true
+no_implicit_reexport = true
+strict_equality = true
+
+[[tool.mypy.overrides]]
+module = [
+    "polars.*",
+    "duckdb.*",
+    "structlog.*",
+]
+ignore_missing_imports = true
+
+# ===== COVERAGE =====
+[tool.coverage.run]
+source = ["src"]
+branch = true
+omit = [
+    "tests/*",
+    "**/__main__.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "@abstractmethod",
+]
+
+fail_under = 70
+skip_covered = false
+show_missing = true
