@@ -81,22 +81,11 @@ lint = [
 # ===== SISTEMA DE BUILD =====
 # Configuração para empacotamento e distribuição
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
-[tool.hatch.build.targets.wheel]
-packages = ["src/participacao_eleitoral"]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
 
 [project.scripts]
 participacao-eleitoral = "participacao_eleitoral.cli:app"
-
-[tool.hatch.build.targets.sdist]
-include = [
-    "/src",
-    "/tests",
-    "/README.md",
-    "/pyproject.toml",
-]
 
 # ===== CONFIGURAÇÃO DO UV =====
 # Gerenciador de pacotes e ambiente Python
