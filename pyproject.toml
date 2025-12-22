@@ -105,11 +105,7 @@ include = [
 [tool.uv.workspace]
 members = []
 
-# Index configuration
-[[tool.uv.index]]
-name = "pypi"
-url = "https://pypi.org/simple"
-default = true
+
 
 # ===== RUFF (LINTER) =====
 # Configuração para formatação e linting de código
