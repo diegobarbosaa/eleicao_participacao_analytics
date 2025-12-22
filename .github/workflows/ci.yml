@@ -26,7 +26,7 @@ jobs:
       run: uv run ruff check src/
 
     - name: Run type checker
-      run: uv run mypy src/participacao_eleitoral/
+      run: PYTHONPATH=src uv run --no-install-project python -m mypy src/participacao_eleitoral/
 
     - name: Run tests with coverage
       run: uv run pytest --cov=src --cov-fail-under=70
