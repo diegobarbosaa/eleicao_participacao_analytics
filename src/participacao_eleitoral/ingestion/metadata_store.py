@@ -1,121 +1,169 @@
 from pathlib import Path
-from typing import Optional
 
 import duckdb
 
-from participacao_eleitoral.ingestion.models import IngestaoMetadata
-from participacao_eleitoral.utils.logger import ModernLogger
 from participacao_eleitoral.config import Settings
+from participacao_eleitoral.core.contracts.ingestao_metadata import IngestaoMetadataDict
+from participacao_eleitoral.utils.logger import ModernLogger
 
 
 class MetadataStore:
-    """Gerencia metadados de ingestão em DuckDB"""
+    """
+    Gerencia persistência de metadados de ingestão usando DuckDB.
+
+    Responsabilidades:
+    - Garantir idempotência (dataset + ano)
+    - Auditar execuções
+    - Servir como fonte de observabilidade do pipeline
+    """
 
     def __init__(
         self,
         settings: Settings,
         logger: ModernLogger,
-        db_path: Optional[Path] = None,
+        db_path: Path | None = None,
     ):
         self.settings = settings
         self.logger = logger
 
+        # Caminho do banco de metadados (bronze)
         self.db_path = db_path or self.settings.bronze_dir / "_metadata.duckdb"
+
+        # Garante que o diretório existe
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
 
+        # Conexão DuckDB (arquivo local)
         self.conn = duckdb.connect(str(self.db_path))
+
+        # Inicializa schema
         self._create_tables()
 
         self.logger.info("metadata_store_inicializado", db_path=str(self.db_path))
 
     def _create_tables(self) -> None:
-        self.conn.execute("""
+        """
+        Inicializa o esquema se não existir.
+        """
+
+        self.conn.execute(
+            """
             CREATE TABLE IF NOT EXISTS ingestao_metadata (
-                ano INTEGER PRIMARY KEY,
-                nome_arquivo VARCHAR NOT NULL,
-                url_download VARCHAR NOT NULL,
-                timestamp_inicio VARCHAR NOT NULL,
-                timestamp_fim VARCHAR,
-                arquivo_destino VARCHAR NOT NULL,
+                dataset TEXT NOT NULL,
+                ano INTEGER NOT NULL,
+
+                timestamp_inicio TIMESTAMP NOT NULL,
+                timestamp_fim TIMESTAMP NOT NULL,
+
+                linhas BIGINT,
                 tamanho_bytes BIGINT,
-                linhas_ingeridas BIGINT,
-                checksum_sha256 VARCHAR(64),
-                status VARCHAR NOT NULL,
-                mensagem_erro VARCHAR,
-                duracao_segundos DOUBLE
+                duracao_segundos DOUBLE,
+                status TEXT,
+                checksum TEXT,
+                erro TEXT,
+
+                PRIMARY KEY (dataset, ano)
             )
-        """)
-        self.logger.debug("tabela_metadata_pronta")
-
-    def salvar(self, metadata: IngestaoMetadata) -> None:
-        data = metadata.to_dict()
-
-        self.conn.execute("""
-            INSERT INTO ingestao_metadata VALUES (
-                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
-            )
-            ON CONFLICT (ano) DO UPDATE SET
-                timestamp_fim = excluded.timestamp_fim,
-                arquivo_destino = excluded.arquivo_destino,
-                tamanho_bytes = excluded.tamanho_bytes,
-                linhas_ingeridas = excluded.linhas_ingeridas,
-                checksum_sha256 = excluded.checksum_sha256,
-                status = excluded.status,
-                mensagem_erro = excluded.mensagem_erro,
-                duracao_segundos = excluded.duracao_segundos
-        """, [
-            data["ano"],
-            data["nome_arquivo"],
-            data["url_download"],
-            data["timestamp_inicio"],
-            data["timestamp_fim"],
-            data["arquivo_destino"],
-            data["tamanho_bytes"],
-            data["linhas_ingeridas"],
-            data["checksum_sha256"],
-            data["status"],
-            data["mensagem_erro"],
-            data["duracao_segundos"],
-        ])
-
-        self.logger.success(
-            "metadata_salvo",
-            ano=data["ano"],
-            status=data["status"],
+            """
         )
 
-    def buscar_por_ano(self, ano: int) -> Optional[dict]:
-        result = self.conn.execute(
-            "SELECT * FROM ingestao_metadata WHERE ano = ?",
-            [ano],
-        ).fetchone()
+        # Add missing columns if table already exists (migration)
+        self.conn.execute("ALTER TABLE ingestao_metadata ADD COLUMN IF NOT EXISTS status TEXT")
+        self.conn.execute("ALTER TABLE ingestao_metadata ADD COLUMN IF NOT EXISTS checksum TEXT")
+        self.conn.execute("ALTER TABLE ingestao_metadata ADD COLUMN IF NOT EXISTS erro TEXT")
 
-        if not result:
-            return None
+    def salvar(self, metadata: IngestaoMetadataDict) -> None:
+        """
+        Persiste metadados da ingestão no DuckDB.
 
-        columns = [c[0] for c in self.conn.description]
-        return dict(zip(columns, result))
+        Usa UPSERT por ano para garantir idempotência."""
 
-    def listar_todas(self) -> list[dict]:
-        rows = self.conn.execute("""
-            SELECT
+        self.conn.execute(
+            """
+            INSERT INTO ingestao_metadata (
+                dataset,
                 ano,
                 timestamp_inicio,
                 timestamp_fim,
-                duracao_segundos,
+                linhas,
                 tamanho_bytes,
-                linhas_ingeridas,
+                duracao_segundos,
                 status,
-                mensagem_erro
+                checksum,
+                erro
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT (dataset, ano) DO UPDATE SET
+                timestamp_inicio = excluded.timestamp_inicio,
+                timestamp_fim = excluded.timestamp_fim,
+                linhas = excluded.linhas,
+                tamanho_bytes = excluded.tamanho_bytes,
+                duracao_segundos = excluded.duracao_segundos,
+                status = excluded.status,
+                checksum = excluded.checksum,
+                erro = excluded.erro
+            """,
+            (
+                metadata["dataset"],
+                metadata["ano"],
+                metadata["inicio"],
+                metadata["fim"],
+                metadata["linhas"],
+                metadata["tamanho_bytes"],
+                metadata["duracao_segundos"],
+                metadata["status"],
+                metadata["checksum"],
+                metadata["erro"],
+            ),
+        )
+
+        self.logger.success(
+            "metadata_salvo",
+            ano=metadata["ano"],
+            status=metadata["status"],
+        )
+
+    def buscar(self, dataset: str, ano: int) -> dict | None:
+        """
+        Busca metadados de uma ingestão específica.
+        """
+
+        row = self.conn.execute(
+            """
+            SELECT *
+            FROM ingestao_metadata
+            WHERE dataset = ? AND ano = ?
+            """,
+            (dataset, ano),
+        ).fetchone()
+
+        if not row:
+            return None
+
+        columns = [c[0] for c in self.conn.description]
+        return dict(zip(columns, row, strict=False))
+
+    def listar_todos(self) -> list[dict]:
+        """
+        Lista todas as entradas de metadados de ingestão.
+
+        Returns:
+            Lista de dicionários de metadados
+        """
+
+        rows = self.conn.execute(
+            """
+            SELECT *
             FROM ingestao_metadata
             ORDER BY ano DESC
-        """).fetchall()
+            """
+        ).fetchall()
 
         if not rows:
             return []
 
         columns = [c[0] for c in self.conn.description]
-        return [dict(zip(columns, row)) for row in rows]
+        return [dict(zip(columns, row, strict=False)) for row in rows]
 
     def close(self) -> None:
+        """Fecha a conexão com o DuckDB."""
         self.conn.close()

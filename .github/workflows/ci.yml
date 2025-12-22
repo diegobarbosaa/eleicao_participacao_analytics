@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
+      with:
+        version: "0.4.20"
+
+    - name: Set up Python
+      run: uv python install
+
+    - name: Install dependencies
+      run: uv sync --dev
+
+    - name: Run linter
+      run: uv run ruff check src/
+
+    - name: Run type checker
+      run: uv run mypy src/participacao_eleitoral/
+
+    - name: Run tests with coverage
+      run: uv run pytest --cov=src --cov-fail-under=70

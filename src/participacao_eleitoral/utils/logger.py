@@ -1,4 +1,5 @@
 from datetime import datetime
+from pathlib import Path
 from typing import Any
 
 from rich.console import Console
@@ -9,22 +10,21 @@ class ModernLogger:
     """Logger minimalista inspirado em CLIs modernas"""
 
     LEVELS = {
-    "DEBUG": 10,
-    "INFO": 20,
-    "SUCCESS": 20,
-    "ERROR": 40,
-    "CRITICAL": 50,
+        "DEBUG": 10,
+        "INFO": 20,
+        "SUCCESS": 20,
+        "ERROR": 40,
+        "CRITICAL": 50,
     }
 
-
     ICONS = {
-        "DEBUG": " 🔍 ",
-        "INFO": " ℹ️ ",
-        "SUCCESS": " ✓ ",
-        "PROGRESS": " → ",
-        "WARNING": " ⚠ ",
-        "ERROR": " ✗ ",
-        "CRITICAL": " 🔥 ",
+        "DEBUG": " [DEBUG] ",
+        "INFO": " [INFO] ",
+        "SUCCESS": " [SUCCESS] ",
+        "PROGRESS": " [PROGRESS] ",
+        "WARNING": " [WARNING] ",
+        "ERROR": " [ERROR] ",
+        "CRITICAL": " [CRITICAL] ",
     }
 
     COLORS = {
@@ -42,11 +42,17 @@ class ModernLogger:
         level: str = "INFO",
         show_timestamp: bool = False,
         context: dict[str, Any] | None = None,
+        log_file: str | None = None,
     ):
+        import os
+
         self.level = level.upper()
         self.show_timestamp = show_timestamp
         self.context = context or {}
         self.console = Console(stderr=False, highlight=False)
+        self.log_file = log_file
+        # Detect if running in Airflow to adjust output format
+        self.is_airflow = bool(os.getenv("AIRFLOW_CTX_DAG_ID"))
 
     # ===== Context handling =====
     def bind(self, **context: Any) -> "ModernLogger":
@@ -83,19 +89,38 @@ class ModernLogger:
         if not self._should_log(level):
             return
 
-        text = Text()
-
-        if self.show_timestamp:
-            text.append(datetime.now().strftime("%H:%M:%S "), style="dim")
-
-        text.append(self.ICONS[level], style=self.COLORS[level])
-        text.append(message, style=self.COLORS[level] if level in {"ERROR", "CRITICAL"} else "")
-
         merged_context = {**self.context, **context}
-        if merged_context:
-            text.append(self._format_context(**merged_context), style="dim")
 
-        self.console.print(text)
+        if self.is_airflow:
+            # Plain text output for Airflow (no Rich colors to avoid ANSI artifacts)
+            plain_parts = []
+            if self.show_timestamp:
+                plain_parts.append(datetime.now().strftime("%H:%M:%S "))
+            plain_parts.append(self.ICONS[level])
+            plain_parts.append(message)
+            if merged_context:
+                plain_parts.append(self._format_context(**merged_context))
+            plain_text = " ".join(plain_parts)
+            print(plain_text)
+        else:
+            # Rich formatted output for CLI
+            text = Text()
+
+            if self.show_timestamp:
+                text.append(datetime.now().strftime("%H:%M:%S "), style="dim")
+
+            text.append(self.ICONS[level], style=self.COLORS[level])
+            text.append(message, style=self.COLORS[level] if level in {"ERROR", "CRITICAL"} else "")
+
+            if merged_context:
+                text.append(self._format_context(**merged_context), style="dim")
+
+            # Print no console
+            self.console.print(text)
+
+        # Escrever no arquivo se configurado
+        if self.log_file:
+            self._write_to_file(level, message, **merged_context)
 
     # ===== Public API =====
     def debug(self, message: str, **context: Any) -> None:
@@ -118,3 +143,27 @@ class ModernLogger:
 
     def critical(self, message: str, **context: Any) -> None:
         self._log("CRITICAL", message, **context)
+
+    def _write_to_file(self, level: str, message: str, **context: Any) -> None:
+        """Escreve log no arquivo em formato estruturado."""
+        try:
+            log_file = Path(self.log_file)
+            log_file.parent.mkdir(parents=True, exist_ok=True)
+
+            timestamp = datetime.now().isoformat()
+            log_entry = {
+                "timestamp": timestamp,
+                "level": level,
+                "message": message,
+                "context": context,
+            }
+
+            # Formato JSON para logs estruturados
+            import json
+
+            with open(log_file, "a", encoding="utf-8") as f:
+                f.write(json.dumps(log_entry, ensure_ascii=False) + "\n")
+
+        except Exception:
+            # Silenciar erros de escrita de log para não quebrar a aplicação
+            pass

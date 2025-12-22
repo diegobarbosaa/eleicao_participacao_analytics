@@ -1,7 +1,7 @@
 [project]
 name = "eleicao-participacao-analytics"
 version = "0.1.0"
-description = "Análise de participação eleitoral brasileira com arquitetura Lakehouse"
+description = "Pipeline de dados para análise de participação eleitoral brasileira com arquitetura Lakehouse"
 readme = "README.md"
 authors = [
     { name = "Diego Vanderlei", email = "diegobarbosavl@gmail.com" }
@@ -16,28 +16,53 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
 ]
 
+# ===== DEPENDÊNCIAS PRINCIPAIS =====
+# Bibliotecas principais para o pipeline de dados
 dependencies = [
-    "polars>=1.17.0",
-    "duckdb>=1.1.0",
-    "httpx>=0.27.0",
-    "structlog>=24.4.0",
-    "pydantic>=2.10.0",
-    "pydantic-settings>=2.6.0",
-    "typer>=0.15.0",
-    "rich>=13.9.0",
-    "tenacity>=9.1.2",
-    "pyarrow>=22.0.0",
+    # Processamento de dados analíticos
+    "polars>=1.17.0",      # Engine de processamento de dados (similar ao pandas, mas mais rápida)
+
+    # Banco de dados analítico
+    "duckdb>=1.1.0",       # Banco de dados analítico para consultas SQL sobre arquivos Parquet
+
+    # Cliente HTTP
+    "httpx>=0.27.0",       # Cliente HTTP moderno com suporte a async
+
+    # Logging estruturado
+    "structlog>=24.4.0",   # Logging estruturado e configurável
+
+    # Configurações e validação
+    "pydantic>=2.10.0",           # Validação de dados e configurações
+    "pydantic-settings>=2.6.0",   # Gerenciamento de configurações com variáveis de ambiente
+
+    # Interface de linha de comando
+    "typer>=0.15.0",       # Framework para criar CLIs com type hints
+
+    # Interface rica
+    "rich>=13.9.0",        # Renderização rica de texto e tabelas no terminal
+
+    # Tratamento de erros e retry
+    "tenacity>=9.1.2",     # Biblioteca para retry com estratégias avançadas
+
+    # Leitura e escrita de dados
+    "pyarrow>=22.0.0",     # Leitura e escrita de formatos de dados (Parquet, etc.)
 ]
 
-# ===== DEPENDENCY GROUPS (NOVO PADRÃO PEP 735) =====
+# ===== GRUPOS DE DEPENDÊNCIAS (PEP 735) =====
+# Dependências organizadas por propósito para desenvolvimento e testes
 [dependency-groups]
 dev = [
+    # Testes
     "pytest>=8.3.0",
     "pytest-cov>=6.0.0",
     "pytest-mock>=3.14.0",
     "pytest-httpx>=0.30.0",
+
+    # Linting e tipagem
     "ruff>=0.8.0",
     "mypy>=1.13.0",
+
+    # Ferramentas de desenvolvimento
     "ipython>=8.31.0",
 ]
 
@@ -53,13 +78,17 @@ lint = [
     "mypy>=1.13.0",
 ]
 
-# ===== BUILD SYSTEM =====
+# ===== SISTEMA DE BUILD =====
+# Configuração para empacotamento e distribuição
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/participacao_eleitoral"]
+
+[project.scripts]
+participacao-eleitoral = "participacao_eleitoral.cli:app"
 
 [tool.hatch.build.targets.sdist]
 include = [
@@ -69,7 +98,8 @@ include = [
     "/pyproject.toml",
 ]
 
-# ===== UV CONFIGURATION =====
+# ===== CONFIGURAÇÃO DO UV =====
+# Gerenciador de pacotes e ambiente Python
 [tool.uv]
 # Workspace configuration
 [tool.uv.workspace]
@@ -81,7 +111,8 @@ name = "pypi"
 url = "https://pypi.org/simple"
 default = true
 
-# ===== RUFF =====
+# ===== RUFF (LINTER) =====
+# Configuração para formatação e linting de código
 [tool.ruff]
 line-length = 100
 target-version = "py311"
@@ -118,7 +149,8 @@ ignore = ["E501"]
 quote-style = "double"
 indent-style = "space"
 
-# ===== PYTEST =====
+# ===== PYTEST (TESTES) =====
+# Configuração para execução de testes
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
@@ -133,7 +165,8 @@ markers = [
     "slow: Testes muito lentos",
 ]
 
-# ===== MYPY =====
+# ===== MYPY (TIPOS) =====
+# Configuração para verificação de tipos
 [tool.mypy]
 python_version = "3.11"
 strict = true
@@ -159,7 +192,8 @@ module = [
 ]
 ignore_missing_imports = true
 
-# ===== COVERAGE =====
+# ===== COBERTURA DE CÓDIGO =====
+# Configuração para análise de cobertura de testes
 [tool.coverage.run]
 source = ["src"]
 branch = true
