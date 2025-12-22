@@ -1,6 +1,6 @@
 [project]
-name = "eleicao-participacao-analytics"
-version = "0.1.0"
+name = "eleicao_participacao_analytics"
+version = "0.1.1"
 description = "Pipeline de dados para análise de participação eleitoral brasileira com arquitetura Lakehouse"
 readme = "README.md"
 authors = [
