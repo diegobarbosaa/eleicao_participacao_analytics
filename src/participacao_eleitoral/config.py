@@ -2,10 +2,10 @@
 
 import os
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 from urllib.parse import urlparse
 
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, ValidationInfo
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -100,7 +100,7 @@ class Settings(BaseSettings):
         mode="before",
     )
     @classmethod
-    def _resolve_dirs(cls, v, info) -> Path:
+    def _resolve_dirs(cls, v: Any, info: ValidationInfo) -> Path:
         """
         Monta os caminhos de dados e logs a partir de project_root.
 
@@ -112,7 +112,7 @@ class Settings(BaseSettings):
         """
         project_root = info.data["project_root"]
 
-        mapping = {
+        mapping: dict[str, Path] = {
             "data_dir": project_root / "data",
             "logs_dir": project_root / "logs",
             "bronze_dir": project_root / "data" / "bronze",
@@ -120,6 +120,7 @@ class Settings(BaseSettings):
             "gold_dir": project_root / "data" / "gold",
         }
 
+        assert info.field_name is not None
         return mapping[info.field_name]
 
     def setup_dirs(self) -> None:

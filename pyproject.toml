@@ -168,19 +168,12 @@ warn_unused_ignores = true
 warn_return_any = true
 no_implicit_reexport = true
 strict_equality = true
-mypy_path = ["src"]
 
 [[tool.mypy.overrides]]
 module = [
     "polars.*",
     "duckdb.*",
     "structlog.*",
-]
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = [
-    "eleicao_participacao_analytics.*",
 ]
 ignore_missing_imports = true
 

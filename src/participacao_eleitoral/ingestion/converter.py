@@ -33,7 +33,7 @@ class CSVToParquetConverter:
         self,
         csv_path: Path,
         parquet_path: Path,
-        schema: dict[str, pl.DataType] | None,
+        schema: dict[str, type[pl.DataType]] | None,
         source: str,
     ) -> ConvertResult:
         """
