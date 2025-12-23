@@ -2,6 +2,7 @@
 
 import subprocess
 import sys
+from unittest.mock import patch, MagicMock
 
 
 def test_cli_help_principal():
