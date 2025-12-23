@@ -1,5 +1,5 @@
 [project]
-name = "eleicao_participacao_analytics"
+name = "eleicaoparticipacaoanalytics"
 version = "0.1.1"
 description = "Pipeline de dados para análise de participação eleitoral brasileira com arquitetura Lakehouse"
 readme = "README.md"

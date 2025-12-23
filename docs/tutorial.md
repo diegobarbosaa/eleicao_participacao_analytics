@@ -93,7 +93,7 @@ INSERT OR IGNORE INTO table VALUES (1, 'data')
 ### Estrutura de Diretórios
 
 ```
-eleicao-participacao-analytics/
+eleicao_participacao_analytics/
 ├── src/participacao_eleitoral/     # Código principal
 │   ├── core/                       # Regras de negócio
 │   ├── ingestion/                  # Processamento de dados
@@ -290,7 +290,7 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # Clone e configure
 git clone <repo>
-cd eleicao-participacao-analytics
+cd eleicao_participacao_analytics
 uv sync
 ```
 

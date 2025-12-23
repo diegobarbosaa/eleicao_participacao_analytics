@@ -18,8 +18,8 @@ Pipeline de dados para processamento de participação eleitoral brasileira usan
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # Clonar e configurar projeto
-git clone https://github.com/diegobarbosaa/eleicao-participacao-analytics.git
-cd eleicao-participacao-analytics
+git clone https://github.com/diegobarbosaa/eleicao_participacao_analytics.git
+cd eleicao_participacao_analytics
 uv sync
 ```
 
