@@ -179,7 +179,7 @@ ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = [
-    "eleicaoparticipacaoanalytics.*",
+    "eleicao_participacao_analytics.*",
 ]
 ignore_missing_imports = true
 
