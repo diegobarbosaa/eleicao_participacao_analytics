@@ -1,5 +1,5 @@
 ```md
-# Architectural Decision Records (ADR)
+# Registros de Decisão Arquitetural (ADR)
 
 Este documento registra decisões arquiteturais relevantes tomadas ao longo
 do desenvolvimento do projeto.
@@ -64,3 +64,30 @@ garantindo transparência e reprodutibilidade.
 
 O logging da aplicação é centralizado no módulo `utils`,
 garantindo padronização e fácil integração com sistemas de observabilidade.
+
+---
+
+## ADR-008 – Uso de Polars e DuckDB no Lakehouse
+
+As transformações analíticas são realizadas em Python utilizando Polars,
+priorizando performance e clareza de código.
+
+DuckDB é utilizado como engine analítica para consultas SQL sobre arquivos
+Parquet, criação de views e validações, sem atuar como banco transacional.
+
+Essa abordagem reflete arquiteturas modernas de Lakehouse file-based.
+
+---
+
+## ADR-009 – Uso de Airflow com Astronomer e Docker
+
+O projeto utiliza Apache Airflow empacotado via Astronomer,
+executando em containers Docker.
+
+Essa escolha visa:
+- Padronização de ambiente
+- Facilidade de deploy em cloud
+- Simulação de ambientes produtivos reais
+
+A infraestrutura é introduzida de forma incremental,
+evitando complexidade prematura.

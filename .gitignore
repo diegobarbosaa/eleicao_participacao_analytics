@@ -12,11 +12,24 @@ venv/
 ENV/
 env/
 
+# Dependencies and package management
+poetry.lock
+Pipfile
+Pipfile.lock
+requirements.txt
+requirements-dev.txt
+
 # pytest
 .pytest_cache/
 .coverage
 htmlcov/
 .tox/
+
+# ruff
+.ruff*
+
+# Airflow
+Airflow*
 
 # mypy
 .mypy_cache/
@@ -65,6 +78,12 @@ desktop.ini
 *.sqlite
 *.duckdb
 
+# Data files (processed/temporary - ignore generated data)
+*.tmp.csv
+*.tmp.parquet
+*.processed.*
+*.output.*
+
 # Environment variables (quando criar)
 .env
 .env.local
@@ -79,3 +98,8 @@ build/
 .coverage
 coverage.xml
 *.cover
+
+# DuckDB temporary files
+*.duckdb-wal
+*.duckdb-tmp
+*.tmp.*

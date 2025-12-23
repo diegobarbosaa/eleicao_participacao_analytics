@@ -1,116 +1,175 @@
-"""Interface de linha de comando (CLI) para o projeto"""
-
+# Typer é uma lib moderna para CLI:
+# - baseada em type hints
+# - simples
+# - ideal para projetos Python profissionais
 import typer
-from rich.console import Console
-from rich.panel import Panel
 
+# Configurações globais (paths, timeouts, etc.)
 from participacao_eleitoral.config import Settings
+
+# Pipeline orquestrador
 from participacao_eleitoral.ingestion.pipeline import IngestionPipeline
-from participacao_eleitoral.ingestion.models import StatusIngestao
-from participacao_eleitoral.ingestion.tse_urls import TSEDatasetURLs
+
+# Logger estruturado
 from participacao_eleitoral.utils.logger import ModernLogger
 
-# ===== Bootstrap =====
-app = typer.Typer(
-    name="participacao-eleitoral",
-    help="Pipeline de análise de participação eleitoral brasileira",
-    add_completion=False,
-)
+# Criamos a aplicação CLI
+# Isso permite futuramente:
+# - múltiplos comandos
+# - help automático
+# - validação de argumentos
+app = typer.Typer(help="CLI para ingestão de dados eleitorais do TSE")
 
-console = Console()
+# Criar subgrupos de comandos para melhor organização
+data_app = typer.Typer(help="Comandos para manipulação de dados")
+app.add_typer(data_app, name="data")
+
+validate_app = typer.Typer(help="Comandos para validação")
+app.add_typer(validate_app, name="validate")
+
+utils_app = typer.Typer(help="Comandos utilitários")
+app.add_typer(utils_app, name="utils")
 
 
-def _build_pipeline() -> IngestionPipeline:
-    settings = Settings()
-    logger = ModernLogger(
-        level=settings.log_level,
-        show_timestamp=settings.show_timestamps,
-    )
-    return IngestionPipeline(settings=settings, logger=logger)
-
-
-# ===== Commands =====
-@app.command()
+@data_app.command()
 def ingest(
-    ano: int = typer.Argument(..., help="Ano da eleição (ex: 2024, 2022, 2020)"),
-    force: bool = typer.Option(False, "--force", "-f", help="Forçar re-ingestão se já existe"),
-):
-    """Ingere dados de comparecimento eleitoral do TSE."""
+    ano: int = typer.Argument(
+        ...,
+        help="Ano da eleição (ex: 2022, 2024)",
+    ),
+    log_level: str = typer.Option(
+        "INFO",
+        help="Nível de log (DEBUG, INFO, WARNING, ERROR)",
+    ),
+) -> None:
+    """
+    Executa a ingestão do dataset de comparecimento eleitoral.
 
-    console.print(f"\n[bold cyan]🚀 Iniciando ingestão de {ano}[/bold cyan]\n")
+    Este comando:
+    - inicializa configurações
+    - inicializa logger
+    - chama o pipeline
+    - trata erros de forma amigável
+    """
 
-    pipeline = _build_pipeline()
+    # Inicializa configurações globais
+    # Aqui normalmente:
+    # - paths vêm de env vars
+    # - valores default vêm do Settings
+    settings = Settings()
+    settings.setup_dirs()  # Criar diretórios necessários
 
-    # Caminho correto do Parquet
-    dataset_dir = (
-        pipeline.settings.bronze_dir
-        / "comparecimento_abstencao"
-        / f"year={ano}"
+    # Inicializa o logger
+    # CLI geralmente usa logs mais verbosos que Airflow
+    log_file_path = settings.logs_dir / f"comparecimento_{ano}.log"
+    logger = ModernLogger(level=log_level, log_file=str(log_file_path))
+
+    pipeline = IngestionPipeline(
+        settings=settings,
+        logger=logger,
     )
-    parquet_path = dataset_dir / "data.parquet"
-
-    if parquet_path.exists() and not force:
-        console.print(
-            f"[yellow]⚠️ Dados de {ano} já existem:[/yellow]\n"
-            f"  {parquet_path}\n\n"
-            f"Use --force para reprocessar.\n"
-        )
-        raise typer.Exit(0)
 
     try:
-        metadata = pipeline.run(ano)
-
-        if metadata.status != StatusIngestao.SUCESSO:
-            raise RuntimeError("Ingestão finalizou com falha")
-
-        console.print(
-            Panel.fit(
-                f"[bold green]✅ Ingestão concluída com sucesso![/bold green]\n\n"
-                f"[cyan]Ano:[/cyan] {metadata.dataset.ano}\n"
-                f"[cyan]Dataset:[/cyan] comparecimento_abstencao\n"
-                f"[cyan]Arquivo:[/cyan] {metadata.arquivo_destino}\n"
-                f"[cyan]Linhas:[/cyan] {metadata.linhas_ingeridas:,}\n"
-                f"[cyan]Tamanho:[/cyan] {metadata.tamanho_bytes / 1024 / 1024:.2f} MB\n"
-                f"[cyan]Duração:[/cyan] {metadata.duracao_segundos:.1f}s\n"
-                f"[cyan]Checksum:[/cyan] {metadata.checksum_sha256[:16]}...\n",
-                title="📊 Resultado da Ingestão",
-                border_style="green",
-            )
+        logger.info(
+            "cli_ingest_iniciada",
+            ano=ano,
         )
+
+        pipeline.run(ano)
+
+        logger.success(
+            "cli_ingest_concluida",
+            ano=ano,
+        )
+
+        # Feedback amigável para quem roda no terminal
+        typer.echo(f"Ingestão do ano {ano} concluída com sucesso.")
 
     except Exception as exc:
-        console.print(
-            Panel.fit(
-                f"[bold red]❌ Falha na ingestão[/bold red]\n\n"
-                f"[cyan]Ano:[/cyan] {ano}\n"
-                f"[cyan]Erro:[/cyan] {exc}\n",
-                title="Erro",
-                border_style="red",
-            )
+        logger.error(
+            "cli_ingest_falhou",
+            ano=ano,
+            erro=str(exc),
+            tipo_erro=type(exc).__name__,
         )
-        raise typer.Exit(1)
+
+        # Mensagem clara para o usuário
+        typer.echo(
+            f"Erro ao executar ingestão do ano {ano}: {exc}",
+            err=True,
+        )
+
+        # Código de saída != 0 (importante para scripts/CI)
+        raise typer.Exit(code=1) from exc
 
 
-@app.command()
-def list_anos():
-    """Lista anos disponíveis para ingestão"""
+@data_app.command()
+def list_years(
+    log_level: str = typer.Option(
+        "INFO",
+        help="Nível de log (DEBUG, INFO, WARNING, ERROR)",
+    ),
+) -> None:
+    """Lista anos disponíveis para ingestão."""
+    logger = ModernLogger(level=log_level)
 
+    try:
+        from participacao_eleitoral.ingestion.tse_urls import TSEDatasetURLs
+
+        years = TSEDatasetURLs.ANOS_DISPONIVEIS
+        typer.echo("Anos disponíveis:")
+        for year in years:
+            typer.echo(f"  - {year}")
+    except Exception as exc:
+        logger.error("list_years_failed", erro=str(exc))
+        typer.echo(f"Erro ao listar anos: {exc}", err=True)
+        raise typer.Exit(code=1) from exc
+
+
+@validate_app.command()
+def schema(
+    dataset: str = typer.Argument(..., help="Dataset para validar (comparecimento)"),
+    log_level: str = typer.Option("INFO", help="Nível de log"),
+) -> None:
+    """Valida schema de um dataset."""
+    logger = ModernLogger(level=log_level)
+
+    try:
+        if dataset == "comparecimento":
+            from participacao_eleitoral.ingestion.schemas.comparecimento import (
+                SCHEMA_COMPARECIMENTO,
+            )
+
+            typer.echo(f"Schema {dataset} válido: {len(SCHEMA_COMPARECIMENTO)} campos")
+        else:
+            typer.echo(f"Dataset {dataset} não reconhecido", err=True)
+            raise typer.Exit(code=1)
+    except Exception as exc:
+        logger.error("schema_validation_failed", dataset=dataset, erro=str(exc))
+        typer.echo(f"Erro na validação: {exc}", err=True)
+        raise typer.Exit(code=1) from exc
+
+
+@utils_app.command()
+def version() -> None:
+    """Mostra versão da CLI."""
+    typer.echo("participacao-eleitoral-cli v1.0.0")
+
+
+@utils_app.command()
+def config_show(
+    log_level: str = typer.Option("INFO", help="Nível de log"),
+) -> None:
+    """Mostra configurações atuais."""
     settings = Settings()
 
-    console.print("\n[bold cyan]📅 Anos Disponíveis[/bold cyan]\n")
-
-    for ano in TSEDatasetURLs.listar_anos_disponiveis():
-        parquet_path = (
-            settings.bronze_dir
-            / "comparecimento_abstencao"
-            / f"year={ano}"
-            / "data.parquet"
-        )
-        status = (
-            "[green]✅ Ingerido[/green]"
-            if parquet_path.exists()
-            else "[dim]⭕ Não ingerido[/dim]"
-        )
-        console.print(f"  • {ano} - {status}")
-
-    console.print()
+    typer.echo("Configurações atuais:")
+    typer.echo(f"  Data directory: {settings.data_dir}")
+    typer.echo(f"  Logs directory: {settings.logs_dir}")
+    typer.echo(f"  Bronze directory: {settings.bronze_dir}")
+    typer.echo(f"  Silver directory: {settings.silver_dir}")
+    typer.echo(f"  Gold directory: {settings.gold_dir}")
+    typer.echo(f"  TSE base URL: {settings.tse_base_url}")
+    typer.echo(f"  Request timeout: {settings.request_timeout}")
+    typer.echo(f"  Log level: {settings.log_level}")
+    typer.echo("")
