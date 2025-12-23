@@ -177,6 +177,12 @@ module = [
 ]
 ignore_missing_imports = true
 
+[[tool.mypy.overrides]]
+module = [
+    "eleicaoparticipacaoanalytics.*",
+]
+ignore_missing_imports = true
+
 # ===== COBERTURA DE CÓDIGO =====
 # Configuração para análise de cobertura de testes
 [tool.coverage.run]
