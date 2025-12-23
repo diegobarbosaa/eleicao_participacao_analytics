@@ -100,7 +100,7 @@ class Settings(BaseSettings):
         mode="before",
     )
     @classmethod
-    def _resolve_dirs(cls, v, info):
+    def _resolve_dirs(cls, v, info) -> Path:
         """
         Monta os caminhos de dados e logs a partir de project_root.
 

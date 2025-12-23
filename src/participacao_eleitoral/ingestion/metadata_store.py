@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Any
 
 import duckdb
 
@@ -122,7 +123,7 @@ class MetadataStore:
             status=metadata["status"],
         )
 
-    def buscar(self, dataset: str, ano: int) -> dict | None:
+    def buscar(self, dataset: str, ano: int) -> dict[str, Any] | None:
         """
         Busca metadados de uma ingestão específica.
         """
@@ -142,7 +143,7 @@ class MetadataStore:
         columns = [c[0] for c in self.conn.description]
         return dict(zip(columns, row, strict=False))
 
-    def listar_todos(self) -> list[dict]:
+    def listar_todos(self) -> list[dict[str, Any]]:
         """
         Lista todas as entradas de metadados de ingestão.
 

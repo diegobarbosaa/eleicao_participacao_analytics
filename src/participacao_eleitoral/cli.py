@@ -41,7 +41,7 @@ def ingest(
         "INFO",
         help="Nível de log (DEBUG, INFO, WARNING, ERROR)",
     ),
-):
+) -> None:
     """
     Executa a ingestão do dataset de comparecimento eleitoral.
 
@@ -109,7 +109,7 @@ def list_years(
         "INFO",
         help="Nível de log (DEBUG, INFO, WARNING, ERROR)",
     ),
-):
+) -> None:
     """Lista anos disponíveis para ingestão."""
     logger = ModernLogger(level=log_level)
 
@@ -130,7 +130,7 @@ def list_years(
 def schema(
     dataset: str = typer.Argument(..., help="Dataset para validar (comparecimento)"),
     log_level: str = typer.Option("INFO", help="Nível de log"),
-):
+) -> None:
     """Valida schema de um dataset."""
     logger = ModernLogger(level=log_level)
 
@@ -151,7 +151,7 @@ def schema(
 
 
 @utils_app.command()
-def version():
+def version() -> None:
     """Mostra versão da CLI."""
     typer.echo("participacao-eleitoral-cli v1.0.0")
 
@@ -159,7 +159,7 @@ def version():
 @utils_app.command()
 def config_show(
     log_level: str = typer.Option("INFO", help="Nível de log"),
-):
+) -> None:
     """Mostra configurações atuais."""
     settings = Settings()
 

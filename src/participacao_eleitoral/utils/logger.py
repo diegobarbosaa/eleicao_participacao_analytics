@@ -146,7 +146,10 @@ class ModernLogger:
 
     def _write_to_file(self, level: str, message: str, **context: Any) -> None:
         """Escreve log no arquivo em formato estruturado."""
+        if self.log_file is None:
+            return
         try:
+            assert self.log_file is not None
             log_file = Path(self.log_file)
             log_file.parent.mkdir(parents=True, exist_ok=True)
 

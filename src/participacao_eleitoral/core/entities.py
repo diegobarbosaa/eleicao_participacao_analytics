@@ -28,7 +28,7 @@ class Dataset:
         ComparecimentoContrato.DATASET_NAME,
     }
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         # Validações de nome
         if not self.nome or not isinstance(self.nome, str):
             raise ValueError("Nome deve ser string não vazia")
@@ -64,9 +64,8 @@ class Dataset:
         """Verifica se é dataset de comparecimento."""
         return self.nome == ComparecimentoContrato.DATASET_NAME
 
-    def obter_contrato(self):
+    def obter_contrato(self) -> type[ComparecimentoContrato]:
         """Retorna o contrato correspondente ao dataset."""
         if self.eh_comparecimento:
             return ComparecimentoContrato
         raise ValueError(f"Contrato não encontrado para dataset: {self.nome}")
-
