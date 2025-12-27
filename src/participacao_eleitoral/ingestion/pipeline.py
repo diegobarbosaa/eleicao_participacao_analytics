@@ -76,10 +76,6 @@ class IngestionPipeline:
             logger=logger,
         )
 
-        # Feature flags
-        self._strict_validation_enabled = settings.enable_strict_validation
-        self._performance_logging_enabled = settings.enable_performance_logging
-
     def run(self, ano: int) -> None:
         """
         Executa o pipeline completo para um ano específico.
@@ -115,10 +111,6 @@ class IngestionPipeline:
 
         # Garante que o schema físico respeita o domínio
         validar_schema_contra_contrato()
-
-        # Validação avançada (feature flag)
-        if self._strict_validation_enabled:
-            self._validate_strict_schema(dataset, ano)
 
         try:
             self.logger.info(
@@ -192,13 +184,3 @@ class IngestionPipeline:
             self.metadata_store.salvar(metadata)
 
             raise
-
-    def _validate_strict_schema(self, dataset: Dataset, ano: int) -> None:
-        """Placeholder para validação avançada (desabilitado por padrão)"""
-        self.logger.info(
-            "validacao_estrita_iniciada",
-            dataset=dataset.nome,
-            ano=ano,
-        )
-        # Apenas log por enquanto - sem implementação real
-        self.logger.info("validacao_estrita_concluida")

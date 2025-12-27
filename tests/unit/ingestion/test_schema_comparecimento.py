@@ -4,13 +4,13 @@ from participacao_eleitoral.ingestion.schemas.comparecimento import (
 )
 
 
-def test_schema_respeita_contrato():
+def test_schema_respeita_contrato() -> None:
     """
     Schema físico deve respeitar o contrato lógico.
     """
     validar_schema_contra_contrato()
 
-def test_schema_nao_vazio():
+def test_schema_nao_vazio() -> None:
     """
     Schema não pode ser vazio.
     """

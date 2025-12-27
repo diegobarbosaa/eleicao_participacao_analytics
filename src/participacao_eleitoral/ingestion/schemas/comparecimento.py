@@ -24,17 +24,34 @@ from participacao_eleitoral.core.contracts.comparecimento import (
 # - evita inferência errada
 # - falha cedo se o CSV mudar
 SCHEMA_COMPARECIMENTO = {
-    "ANO_ELEICAO": pl.Int32,          # ano cabe em Int32
-    "CD_MUNICIPIO": pl.Int32,         # código numérico do município
-    "NM_MUNICIPIO": pl.Utf8,          # texto
-    "SG_UF": pl.Utf8,                 # sigla do estado
-    "QT_APTOS": pl.Int64,             # números grandes → Int64
+    "ANO_ELEICAO": pl.Int32,  # ano cabe em Int32
+    "CD_MUNICIPIO": pl.Int32,  # código numérico do município
+    "NM_MUNICIPIO": pl.Utf8,  # texto
+    "SG_UF": pl.Utf8,  # sigla do estado
+    "QT_APTOS": pl.Int64,  # números grandes → Int64
     "QT_COMPARECIMENTO": pl.Int64,
-    "QT_ABSTENCOES": pl.Int64,
-    "NR_ZONA": pl.Int32,              # opcional
-    "NR_TURNO": pl.Int8,              # poucos valores possíveis
-    "NM_UF": pl.Utf8,                 # opcional
+    "QT_ABSTENCAO": pl.Int64,
+    "NR_ZONA": pl.Int32,  # opcional
+    "NR_TURNO": pl.Int8,  # poucos valores possíveis
+    "NM_UF": pl.Utf8,  # opcional
 }
+
+# Mapeamento de tipos lógicos (contrato) → tipos Polars físicos válidos
+# Isso permite validar se o schema físico respeita as regras de negócio
+LOGICO_PHYSICO_MAP: dict[str, tuple[type[pl.DataType], ...]] = {
+    "inteiro": (
+        pl.Int8,
+        pl.Int16,
+        pl.Int32,
+        pl.Int64,
+        pl.UInt8,
+        pl.UInt16,
+        pl.UInt32,
+        pl.UInt64,
+    ),
+    "texto": (pl.Utf8, pl.Categorical),
+}
+
 
 def validar_schema_contra_contrato() -> None:
     """
@@ -63,6 +80,23 @@ def validar_schema_contra_contrato() -> None:
     # preferimos falhar cedo do que ingerir dado errado.
     if faltantes:
         raise RuntimeError(
-            f"Schema físico não atende contrato lógico. "
-            f"Campos faltantes: {faltantes}"
+            f"Schema físico não atende contrato lógico. Campos faltantes: {faltantes}"
         )
+
+    # Validação 2: Tipos de campos obrigatórios
+    # Verifica se o tipo físico respeita o tipo lógico definido no contrato
+    for campo in campos_contrato:
+        if campo in ComparecimentoContrato.CAMPOS_VALIDACOES:
+            tipo_logico = ComparecimentoContrato.CAMPOS_VALIDACOES[campo]["tipo"]
+            tipo_fisico = SCHEMA_COMPARECIMENTO[campo]
+
+            # Buscar tipos válidos para o tipo lógico
+            tipos_validos = LOGICO_PHYSICO_MAP.get(tipo_logico, ())
+
+            if tipo_fisico not in tipos_validos:
+                raise RuntimeError(
+                    f"Schema físico não atende contrato lógico. "
+                    f"Campo '{campo}' tem tipo físico {tipo_fisico.__name__} "
+                    f"mas contrato espera tipo lógico '{tipo_logico}'. "
+                    f"Tipos válidos: {[t.__name__ for t in tipos_validos]}"
+                )

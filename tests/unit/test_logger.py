@@ -1,1 +1,1 @@
-# Test removed due to import error for removed dead code
+# Teste removido devido a erro de import para código morto removido

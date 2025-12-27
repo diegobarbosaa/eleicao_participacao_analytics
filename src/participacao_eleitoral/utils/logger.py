@@ -13,6 +13,8 @@ class ModernLogger:
         "DEBUG": 10,
         "INFO": 20,
         "SUCCESS": 20,
+        "WARNING": 30,
+        "PROGRESS": 30,
         "ERROR": 40,
         "CRITICAL": 50,
     }
@@ -51,7 +53,7 @@ class ModernLogger:
         self.context = context or {}
         self.console = Console(stderr=False, highlight=False)
         self.log_file = log_file
-        # Detect if running in Airflow to adjust output format
+        # Detecta se está rodando no Airflow para ajustar formato de saída
         self.is_airflow = bool(os.getenv("AIRFLOW_CTX_DAG_ID"))
 
     # ===== Context handling =====
@@ -92,7 +94,7 @@ class ModernLogger:
         merged_context = {**self.context, **context}
 
         if self.is_airflow:
-            # Plain text output for Airflow (no Rich colors to avoid ANSI artifacts)
+            # Saída em texto puro para Airflow (sem cores Rich para evitar artefatos ANSI)
             plain_parts = []
             if self.show_timestamp:
                 plain_parts.append(datetime.now().strftime("%H:%M:%S "))
@@ -101,9 +103,9 @@ class ModernLogger:
             if merged_context:
                 plain_parts.append(self._format_context(**merged_context))
             plain_text = " ".join(plain_parts)
-            print(plain_text)
+            # print(plain_text)  # Removido - self.console.print(text) já formata a saída Rich
         else:
-            # Rich formatted output for CLI
+            # Saída formatada com Rich para CLI
             text = Text()
 
             if self.show_timestamp:
@@ -167,6 +169,6 @@ class ModernLogger:
             with open(log_file, "a", encoding="utf-8") as f:
                 f.write(json.dumps(log_entry, ensure_ascii=False) + "\n")
 
-        except Exception:
-            # Silenciar erros de escrita de log para não quebrar a aplicação
+        except Exception as e:
+            # Silenciar erros de escrita de log (comum em containers read-only)
             pass

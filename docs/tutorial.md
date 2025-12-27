@@ -44,7 +44,9 @@ Camada Silver (Limpos e Validados)
 Camada Gold (Prontos para Negócio)
 ```
 
-Este projeto se concentra na **Camada Bronze** - tornando dados brutos confiáveis e acessíveis.
+Este projeto implementa **Camadas Bronze e Silver**:
+- **Bronze**: Tornando dados brutos confiáveis e acessíveis
+- **Silver**: Enriquecendo dados para análise analítica
 
 ### Conceitos Chave Que Você Aprenderá
 
@@ -74,6 +76,123 @@ INSERT OR IGNORE INTO table VALUES (1, 'data')
 - **Schema-on-Read**: Define estrutura ao ler (arquivos flexíveis)
 - Este projeto usa **ambos** - valida esquema durante o processamento
 
+## Capítulo 3.5: Configuração de Imports no Airflow
+
+### O Problema
+
+Ao executar os DAGs do Airflow, você pode encontrar este erro:
+
+```
+ModuleNotFoundError: No module named 'participacao_eleitoral.silver.pipeline'
+```
+
+Isso acontece porque o Airflow procura módulos apenas em:
+- `/usr/local/airflow/dags/` (onde estão os DAGs)
+- `/usr/local/lib/pythonX.Y/site-packages/` (pacotes instalados)
+
+Mas **NÃO** em:
+- `/app/src/` (onde está o código do projeto)
+
+### A Solução
+
+O módulo `airflow/dags/_shared.py` configurou o `sys.path` automaticamente:
+
+```python
+import sys
+from pathlib import Path
+
+# Caminho para o diretório src do projeto
+# _shared.py está em airflow/dags/, então:
+# - parent = airflow/dags/
+# - parent.parent = airflow/
+# - parent.parent.parent = raiz do projeto
+project_root = Path(__file__).resolve().parent.parent.parent
+src_path = project_root / "src"
+
+# Adiciona src ao path (prioridade alta para sobrepor pacotes instalados)
+sys.path.insert(0, str(src_path))
+sys.path.insert(1, str(project_root))  # Para compatibilidade com código existente
+```
+
+### Por Que Isso Funciona
+
+1. **Path Relativo Inteligente:**
+   - `Path(__file__)` = `airflow/dags/_shared.py`
+   - `.parent` = `airflow/dags/`
+   - `.parent.parent` = `airflow/`
+   - `.parent.parent.parent` = `/app/` (raiz do projeto)
+   - `/app/src/` = diretório do código
+
+2. **Prioridade Alta:**
+   - `sys.path.insert(0, str(src_path))` coloca `src` no topo da lista
+   - Python encontra nosso código antes de qualquer pacote instalado
+
+3. **Único Lugar:**
+   - Todos os DAGs importam `_shared` primeiro
+   - O `sys.path` é configurado uma única vez
+   - Funciona para Bronze e Silver
+
+### Importando nos DAGs
+
+**Correto (usa _shared):**
+```python
+from airflow.dags._shared import get_default_args, get_years_to_process
+
+# Agora imports do projeto funcionam:
+from participacao_eleitoral.silver.pipeline import SilverTransformationPipeline
+```
+
+**Errado (tentar import direto sem _shared):**
+```python
+# ❌ Isso falha no Airflow!
+from participacao_eleitoral.silver.pipeline import SilverTransformationPipeline
+```
+
+### Executando Localmente vs Docker
+
+**Local (Development):**
+```bash
+# O sys.path funciona igual em qualquer lugar
+cd airflow
+astro dev start
+```
+
+**Docker (Produção):**
+```yaml
+# No docker-compose.override.yml ou Dockerfile
+services:
+  airflow:
+    volumes:
+      - .:/app  # Monta projeto inteiro em /app
+```
+
+O path `/app/src` existe em ambos os casos.
+
+### Por Que Não Simplesmente Instalar o Pacote?
+
+Poderíamos instalar o pacote no ambiente Airflow:
+
+**Dockerfile:**
+```dockerfile
+COPY src/ /app/src/
+RUN pip install -e /app/  # Instala o pacote em modo desenvolvimento
+```
+
+**Vantagens:**
+- Mais robusto (padrão Python)
+- Funciona em todos os ambientes
+- Permite usar imports normais em qualquer lugar
+
+**Desvantagens:**
+- Requer rebuild do Docker
+- Mais complexidade de setup inicial
+- Difícil em desenvolvimento iterativo
+
+**Escolha Final:**
+Configurar `sys.path` em `_shared.py` é mais simples para desenvolvimento iterativo e funciona consistentemente em todos os ambientes.
+
+## Capítulo 4: Como o Pipeline Funciona Passo a Passo
+
 ## Capítulo 3: Visão Geral da Arquitetura do Projeto
 
 ### Arquitetura de Alto Nível
@@ -96,7 +215,23 @@ INSERT OR IGNORE INTO table VALUES (1, 'data')
 eleicao_participacao_analytics/
 ├── src/participacao_eleitoral/     # Código principal
 │   ├── core/                       # Regras de negócio
-│   ├── ingestion/                  # Processamento de dados
+│   │   ├── entities.py            # Dataset entity (aceita Bronze e Silver)
+│   │   ├── services.py            # Construção de metadata Bronze
+│   │   └── services_silver.py     # Construção de metadata Silver
+│   ├── ingestion/                 # Processamento Bronze
+│   │   ├── pipeline.py            # IngestionPipeline
+│   │   ├── downloader.py         # TSEDownloader
+│   │   ├── converter.py          # CSVToParquetConverter
+│   │   ├── metadata_store.py     # MetadataStore (DuckDB Bronze)
+│   │   ├── results.py            # DownloadResult, ConvertResult
+│   │   └── tse_urls.py          # TSEDatasetURLs
+│   ├── silver/                    # Processamento Silver (NOVO)
+│   │   ├── pipeline.py            # SilverTransformationPipeline (NOVO)
+│   │   ├── transformer.py         # BronzeToSilverTransformer
+│   │   ├── metadata_store.py     # SilverMetadataStore (DuckDB) (NOVO)
+│   │   ├── results.py            # SilverTransformResult (NOVO)
+│   │   ├── region_mapper.py      # RegionMapper (NOVO)
+│   │   └── schemas/              # Schema físico + validação (NOVO)
 │   └── utils/                      # Utilitários compartilhados
 ├── tests/                          # Garantia de qualidade
 ├── airflow/                        # Orquestração
@@ -135,15 +270,21 @@ Essa separação torna o código testável e mantível.
 
 ## Capítulo 4: Componentes Core em Detalhe
 
-### A Entidade Dataset
+### A Entidade Dataset (Atualizado)
 
 Pense em `Dataset` como uma "ordem de trabalho" para processamento de dados:
 
 ```python
 dataset = Dataset(
-    nome="comparecimento_abstencao",
+    nome="comparecimento_abstencao",  # Bronze
     ano=2022,
     url_origem="https://tse.jus.br/data.zip"
+)
+
+dataset_silver = Dataset(
+    nome="comparecimento_abstencao_silver",  # Silver
+    ano=2022,
+    url_origem="data/bronze/comparecimento_abstencao/year=2022/data.parquet"  # Path local
 )
 ```
 
@@ -151,6 +292,64 @@ dataset = Dataset(
 - `frozen=True`: Não pode modificar acidentalmente após criação
 - `dataclass`: Gera automaticamente código boilerplate
 - Type hints: IDE ajuda a capturar erros
+
+**Validação Atualizada:**
+- Validações de nome, ano e tipo de URL (HTTP ou path local)
+- Suporta tanto datasets de download quanto datasets de transformação
+
+- Validações de nome, ano e tipo de URL (HTTP ou path local)
+- Suporta tanto datasets de download quanto datasets de transformação
+
+### Componentes da Camada Silver (NOVO)
+
+#### 1. SilverTransformationPipeline
+Orquestrador que coordena todo o fluxo Bronze → Silver:
+
+```python
+from participacao_eleitoral.silver import SilverTransformationPipeline
+
+pipeline = SilverTransformationPipeline(settings=settings, logger=logger)
+pipeline.run(ano=2022)
+```
+
+**Características:**
+- Idempotência (verifica DuckDB + arquivo)
+- Validação de schema
+- Rastreabilidade completa
+- Injeção de dependência (útil para testes)
+
+**Fluxo Interno:**
+1. Cria Dataset entity
+2. Verifica idempotência (se já transformou com sucesso)
+3. Valida schema físico vs contrato lógico
+4. Verifica se arquivo bronze existe
+5. Executa transformação
+6. Persiste metadados no DuckDB
+
+#### 2. RegionMapper
+Mapeia UFs brasileiras para regiões geográficas:
+
+```python
+from participacao_eleitoral.silver import RegionMapper
+
+regiao = RegionMapper.get_regiao("SP")  # "Sudeste"
+regiao = RegionMapper.get_regiao("XX")  # "Desconhecido"
+```
+
+**Características:**
+- Suporta todas as 27 UFs brasileiras
+- Case-sensitive (apenas siglas maiúsculas)
+- Retorna "Desconhecido" para UF inválida
+
+#### 3. Validação de Schema Silver
+
+```python
+from participacao_eleitoral.silver.schemas import validar_schema_silver_contra_contrato
+
+validar_schema_silver_contra_contrato()  # Lança erro se schema inválido
+```
+
+Garante que o schema físico respeita o contrato lógico do domínio.
 
 ### Contratos: Acordos de Dados
 
@@ -303,8 +502,11 @@ source .venv/bin/activate
 # Listar anos disponíveis
 uv run participacao-eleitoral data list-years
 
-# Ingerir dados de um ano específico
+# Ingerir dados de um ano específico (Bronze)
 uv run participacao-eleitoral data ingest 2022
+
+# Transformar dados Bronze → Silver
+uv run participacao-eleitoral data transform 2022
 
 # Verificar configuração
 uv run participacao-eleitoral utils config-show
@@ -330,7 +532,11 @@ data/
 ├── bronze/
 │   └── comparecimento_abstencao/
 │       └── year=2022/
-│           └── data.parquet          # Arquivo de dados principal
+│           └── data.parquet          # Dados brutos do TSE
+├── silver/
+│   └── comparecimento_abstencao/
+│       └── year=2022/
+│           └── data.parquet          # Dados enriquecidos (taxas, regiões)
 └── _metadata.duckdb                  # Histórico de processamento
 ```
 
@@ -345,10 +551,25 @@ conn = duckdb.connect("data/_metadata.duckdb");
 # Ver o que foi processado
 conn.execute("SELECT * FROM ingestao_metadata").df();
 
-# Consultar os dados reais
+# Consultar os dados reais (Bronze)
 conn.execute("""
     SELECT * FROM 'data/bronze/comparecimento_abstencao/year=2022/data.parquet'
     WHERE QT_COMPARECIMENTO > 100000
+""").df();
+
+# Consultar dados enriquecidos (Silver)
+conn.execute("""
+    SELECT
+        NM_MUNICIPIO,
+        SG_UF,
+        NOME_REGIAO,
+        QT_COMPARECIMENTO,
+        TAXA_COMPARECIMENTO_PCT,
+        TAXA_ABSTENCAO_PCT
+    FROM 'data/silver/comparecimento_abstencao/year=2022/data.parquet'
+    WHERE NOME_REGIAO = 'Sudeste'
+    ORDER BY TAXA_COMPARECIMENTO_PCT DESC
+    LIMIT 10
 """).df();
 ```
 
@@ -684,11 +905,11 @@ use_new_downloader = os.getenv("USE_NEW_DOWNLOADER", "false").lower() == "true"
 
 ### Melhorias Futuras
 
-1. **Camada Silver:** Limpeza e padronização de dados
-2. **Camada Gold:** Métricas agregadas e KPIs
-3. **Camada API:** API REST para acesso a dados
-4. **Dashboard:** Interface web para exploração
-5. **Machine Learning:** Modelos preditivos (se eticamente apropriado)
+1. **Camada Gold:** Métricas agregadas e KPIs
+2. **Camada API:** API REST para acesso a dados
+3. **Dashboard:** Interface web para exploração
+4. **Machine Learning:** Modelos preditivos (se eticamente apropriado)
+5. **Exemplos de queries:** Queries SQL com DuckDB para análise de dados
 
 ### Considerações Finais
 

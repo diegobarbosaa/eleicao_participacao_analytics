@@ -1,0 +1,9 @@
+from .comparecimento import ComparecimentoContrato
+from .comparecimento_silver import ComparecimentoSilverContrato
+from .ingestao_metadata import IngestaoMetadataDict
+
+__all__ = [
+    "ComparecimentoContrato",
+    "ComparecimentoSilverContrato",
+    "IngestaoMetadataDict",
+]

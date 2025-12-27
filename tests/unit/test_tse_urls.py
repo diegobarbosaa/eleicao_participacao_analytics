@@ -6,7 +6,7 @@ from participacao_eleitoral.ingestion.tse_urls import TSEDatasetURLs
 class TestTSEDatasetURLs:
     """Testa construção de URLs do TSE."""
 
-    def test_url_comparecimento_2024(self):
+    def test_url_comparecimento_2024(self) -> None:
         """Testa URL para comparecimento 2024."""
         url = TSEDatasetURLs.get_comparecimento_url(2024)
 
@@ -14,13 +14,13 @@ class TestTSEDatasetURLs:
         assert "perfil_comparecimento_abstencao" in url
         assert "2024.zip" in url
 
-    def test_url_comparecimento_2022(self):
+    def test_url_comparecimento_2022(self) -> None:
         """Testa URL para comparecimento 2022."""
         url = TSEDatasetURLs.get_comparecimento_url(2022)
 
         assert "2022.zip" in url
 
-    def test_listar_anos_disponiveis(self):
+    def test_listar_anos_disponiveis(self) -> None:
         """Testa listagem de anos disponíveis."""
         anos = TSEDatasetURLs.listar_anos_disponiveis()
 
@@ -29,7 +29,7 @@ class TestTSEDatasetURLs:
         assert 2022 in anos
         assert len(anos) > 0
 
-    def test_anos_ordenados_decrescente(self):
+    def test_anos_ordenados_decrescente(self) -> None:
         """Testa que anos estão em ordem decrescente."""
         anos = TSEDatasetURLs.listar_anos_disponiveis()
 

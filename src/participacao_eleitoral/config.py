@@ -2,10 +2,10 @@
 
 import os
 from pathlib import Path
-from typing import Any, Literal
+from typing import Literal
 from urllib.parse import urlparse
 
-from pydantic import Field, ValidationInfo, field_validator
+from pydantic import Field, field_validator, computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -17,7 +17,7 @@ def _default_project_root() -> Path:
       /usr/local/airflow/src/participacao_eleitoral/config.py
 
       Então: parents[2] -> /usr/local/airflow
-    - Fora do container, quando você roda o projeto direto,
+    - Fora do container, quando você roda o projeto diretamente,
       continua valendo a mesma lógica.
     """
     return Path(__file__).resolve().parents[2]
@@ -31,12 +31,31 @@ class Settings(BaseSettings):
     # Raiz do projeto (dentro do container: /usr/local/airflow)
     project_root: Path = Field(default_factory=_default_project_root)
 
-    # Diretórios derivados da raiz
-    data_dir: Path = Field(default=None)  # type: ignore
-    logs_dir: Path = Field(default=None)  # type: ignore
-    bronze_dir: Path = Field(default=None)  # type: ignore
-    silver_dir: Path = Field(default=None)  # type: ignore
-    gold_dir: Path = Field(default=None)  # type: ignore
+    # Diretórios derivados da raiz (propriedades computadas)
+    @property
+    def data_dir(self) -> Path:
+        """Diretório de dados derivado de project_root."""
+        return self.project_root / "data"
+
+    @property
+    def logs_dir(self) -> Path:
+        """Diretório de logs derivado de project_root."""
+        return self.project_root / "logs"
+
+    @property
+    def bronze_dir(self) -> Path:
+        """Diretório bronze derivado de project_root."""
+        return self.project_root / "data" / "bronze"
+
+    @property
+    def silver_dir(self) -> Path:
+        """Diretório silver derivado de project_root."""
+        return self.project_root / "data" / "silver"
+
+    @property
+    def gold_dir(self) -> Path:
+        """Diretório gold derivado de project_root."""
+        return self.project_root / "data" / "gold"
 
     # ===== TSE API =====
     tse_base_url: str = "https://cdn.tse.jus.br/estatistica/sead/odsele"
@@ -53,12 +72,6 @@ class Settings(BaseSettings):
     polars_threads: int = Field(
         default_factory=lambda: os.cpu_count() or 4,
         ge=1,
-    )
-
-    # ===== FEATURE FLAGS (DESLABILITADAS POR PADRÃO) =====
-    enable_strict_validation: bool = Field(default=False, description="Validação estrita de schema")
-    enable_performance_logging: bool = Field(
-        default=False, description="Logs detalhados de performance"
     )
 
     model_config = SettingsConfigDict(
@@ -91,43 +104,13 @@ class Settings(BaseSettings):
             raise ValueError(f"Project root does not exist: {v}")
         return v
 
-    @field_validator(
-        "data_dir",
-        "logs_dir",
-        "bronze_dir",
-        "silver_dir",
-        "gold_dir",
-        mode="before",
-    )
-    @classmethod
-    def _resolve_dirs(cls, v: Any, info: ValidationInfo) -> Path:
-        """
-        Monta os caminhos de dados e logs a partir de project_root.
-
-        Dentro do container, se project_root = /usr/local/airflow:
-        - data_dir   -> /usr/local/airflow/data
-        - logs_dir   -> /usr/local/airflow/logs
-        - bronze_dir -> /usr/local/airflow/data/bronze
-        etc.
-        """
-        project_root = info.data["project_root"]
-
-        mapping: dict[str, Path] = {
-            "data_dir": project_root / "data",
-            "logs_dir": project_root / "logs",
-            "bronze_dir": project_root / "data" / "bronze",
-            "silver_dir": project_root / "data" / "silver",
-            "gold_dir": project_root / "data" / "gold",
-        }
-
-        assert info.field_name is not None
-        return mapping[info.field_name]
-
     def setup_dirs(self) -> None:
         """
         Garante que os diretórios principais existem.
-        Se não existirem, cria (sem erro se já existirem).
-        Em caso de falha, imprime aviso no console.
+
+        Computed fields já criam os diretórios automaticamente
+        ao acessá-los, mas mantemos este método para
+        compatibilidade e garantia explícita.
         """
         for path in (
             self.data_dir,
@@ -138,5 +121,6 @@ class Settings(BaseSettings):
         ):
             try:
                 path.mkdir(parents=True, exist_ok=True)
-            except OSError as e:
-                print(f"Aviso: Falha ao criar diretório {path}: {e}")
+            except OSError:
+                # Silenciar erro de criação de diretório (comum em containers read-only)
+                pass

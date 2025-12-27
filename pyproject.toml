@@ -7,7 +7,7 @@ authors = [
     { name = "Diego Vanderlei", email = "diegobarbosavl@gmail.com" }
 ]
 requires-python = ">=3.11"
-license = { text = "MIT" }
+license = "MIT"
 keywords = ["eleições", "analytics", "lakehouse", "dados-abertos", "tse"]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -27,9 +27,6 @@ dependencies = [
 
     # Cliente HTTP
     "httpx>=0.27.0",       # Cliente HTTP moderno com suporte a async
-
-    # Logging estruturado
-    "structlog>=24.4.0",   # Logging estruturado e configurável
 
     # Configurações e validação
     "pydantic>=2.10.0",           # Validação de dados e configurações
@@ -84,6 +81,9 @@ lint = [
 requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
+[tool.setuptools.packages.find]
+where = ["src"]
+
 [project.scripts]
 participacao-eleitoral = "participacao_eleitoral.cli:app"
 
@@ -129,6 +129,7 @@ ignore = ["E501"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**/*.py" = ["S101"]
+"airflow/dags/**/*.py" = ["E402"]  # Allow local imports after sys.path modification
 
 [tool.ruff.format]
 quote-style = "double"
@@ -173,7 +174,6 @@ strict_equality = true
 module = [
     "polars.*",
     "duckdb.*",
-    "structlog.*",
 ]
 ignore_missing_imports = true
 

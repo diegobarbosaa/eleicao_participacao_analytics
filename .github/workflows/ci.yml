@@ -29,4 +29,4 @@ jobs:
       run: uv run python -m mypy -p participacao_eleitoral
 
     - name: Run tests with coverage
-      run: uv run pytest --cov=src --cov-fail-under=70
+      run: uv run pytest --cov=src --cov-fail-under=80

@@ -13,6 +13,11 @@ from participacao_eleitoral.ingestion.pipeline import IngestionPipeline
 # Logger estruturado
 from participacao_eleitoral.utils.logger import ModernLogger
 
+# Transformação Silver (importados no topo para evitar erros de importação)
+from participacao_eleitoral.silver.transformer import BronzeToSilverTransformer
+from participacao_eleitoral.silver.region_mapper import RegionMapper
+from participacao_eleitoral.silver.schemas.comparecimento_silver import SCHEMA_SILVER
+
 # Criamos a aplicação CLI
 # Isso permite futuramente:
 # - múltiplos comandos
@@ -100,6 +105,102 @@ def ingest(
         )
 
         # Código de saída != 0 (importante para scripts/CI)
+        raise typer.Exit(code=1) from exc
+
+
+@data_app.command()
+def transform(
+    ano: int = typer.Argument(..., help="Ano da eleição"),
+    log_level: str = typer.Option("INFO", help="Nível de log"),
+) -> None:
+    """
+    Transforma dados da camada Bronze para Silver.
+
+    Este comando:
+    - Inicializa configurações globais
+    - Cria transformador com mapeador de regiões
+    - Executa transformação de dados bronze → silver
+    - Calcula taxas de participação e abstenção
+    - Trata erros de forma amigável
+
+    Args:
+        ano: Ano da eleição para transformar.
+        log_level: Nível de log (DEBUG, INFO, WARNING, ERROR).
+
+    Raises:
+        typer.Exit: Se ocorrer erro durante transformação.
+
+    Examples:
+        >>> uv run participacao-eleitoral data transform 2022
+        >>> uv run participacao-eleitoral data transform 2024 --log-level DEBUG
+    """
+
+    # Inicializa configurações globais
+    settings = Settings()
+    settings.setup_dirs()
+
+    # Inicializa o logger
+    log_file_path = settings.logs_dir / f"transform_silver_{ano}.log"
+    logger = ModernLogger(level=log_level, log_file=str(log_file_path))
+
+    # Criar caminhos
+    bronze_path = settings.bronze_dir / "comparecimento_abstencao" / f"year={ano}" / "data.parquet"
+    silver_path = settings.silver_dir / "comparecimento_abstencao" / f"year={ano}" / "data.parquet"
+
+    try:
+        logger.info(
+            "cli_transform_iniciada",
+            ano=ano,
+            bronze=str(bronze_path),
+            silver=str(silver_path),
+        )
+
+        # Verificar se bronze existe
+        if not bronze_path.exists():
+            typer.echo(
+                f"Erro: Arquivo bronze não encontrado em {bronze_path}",
+                err=True,
+            )
+            typer.echo(
+                "Execute primeiro: uv run participacao-eleitoral data ingest {ano}",
+                err=True,
+            )
+            raise typer.Exit(code=1)
+
+        # Criar transformador e executar
+        transformer = BronzeToSilverTransformer(logger=logger)
+
+        # Criar mapper de região e schema
+        region_mapper = RegionMapper()
+        result = transformer.transform(
+            bronze_path,
+            silver_path,
+            region_mapper=region_mapper,
+            schema=SCHEMA_SILVER,
+        )
+
+        logger.success(
+            "cli_transform_concluida",
+            ano=ano,
+            linhas=result.linhas,
+        )
+
+        # Feedback amigável
+        typer.echo(f"Transformação do ano {ano} concluída com sucesso.")
+        typer.echo(f"Linhas processadas: {result.linhas:,}")
+
+    except Exception as exc:
+        logger.error(
+            "cli_transform_falhou",
+            ano=ano,
+            erro=str(exc),
+            tipo_erro=type(exc).__name__,
+        )
+
+        typer.echo(
+            f"Erro ao transformar ano {ano}: {exc}",
+            err=True,
+        )
         raise typer.Exit(code=1) from exc
 
 

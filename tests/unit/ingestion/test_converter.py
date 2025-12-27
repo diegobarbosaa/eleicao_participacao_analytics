@@ -5,7 +5,7 @@ from participacao_eleitoral.ingestion.schemas.comparecimento import (
 )
 
 
-def test_converter_gera_parquet(tmp_path, logger):
+def test_converter_gera_parquet(tmp_path, logger) -> None:  # type: ignore[no-untyped-def]
     """
     Converter deve gerar Parquet válido.
     """
@@ -14,7 +14,7 @@ def test_converter_gera_parquet(tmp_path, logger):
     parquet = tmp_path / "output.parquet"
 
     csv.write_text(
-        "ANO_ELEICAO;CD_MUNICIPIO;NM_MUNICIPIO;SG_UF;QT_APTOS;QT_COMPARECIMENTO;QT_ABSTENCOES\n"
+        "ANO_ELEICAO;CD_MUNICIPIO;NM_MUNICIPIO;SG_UF;QT_APTOS;QT_COMPARECIMENTO;QT_ABSTENCAO\n"
         "2022;12345;Recife;PE;1000;800;200\n"
     )
 

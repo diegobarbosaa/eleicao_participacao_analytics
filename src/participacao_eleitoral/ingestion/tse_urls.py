@@ -7,8 +7,7 @@ class TSEDatasetURLs:
     BASE_URL = "https://cdn.tse.jus.br/estatistica/sead/odsele"
 
     ANOS_DISPONIVEIS = [
-        2024, 2022, 2020, 2018, 2016,
-        2014, 2012, 2010, 2008, 2006,
+        2024, 2022, 2020, 2018, 2016, 2014
     ]
 
     @classmethod

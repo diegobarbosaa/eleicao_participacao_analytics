@@ -1,21 +1,22 @@
+"""Gerencia persistência de metadados de transformação Silver"""
+
 from pathlib import Path
 from typing import Any
 
 import duckdb
 
 from participacao_eleitoral.config import Settings
-from participacao_eleitoral.core.contracts.ingestao_metadata import IngestaoMetadataDict
 from participacao_eleitoral.utils.logger import ModernLogger
 
 
-class MetadataStore:
+class SilverMetadataStore:
     """
-    Gerência persistência de metadados de ingestão usando DuckDB.
+    Gerência persistência de metadados de transformação Silver usando DuckDB.
 
     Responsabilidades:
     - Garantir idempotência (dataset + ano)
-    - Auditar execuções
-    - Servir como fonte de observabilidade do pipeline
+    - Auditar execuções de transformação
+    - Servir como fonte de observabilidade do pipeline Silver
     """
 
     def __init__(
@@ -27,8 +28,8 @@ class MetadataStore:
         self.settings = settings
         self.logger = logger
 
-        # Caminho do banco de metadados (bronze)
-        self.db_path = db_path or self.settings.bronze_dir / "_metadata.duckdb"
+        # Caminho do banco de metadados (silver)
+        self.db_path = db_path or self.settings.silver_dir / "_metadata.duckdb"
 
         # Garante que o diretório existe
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
@@ -39,27 +40,24 @@ class MetadataStore:
         # Inicializa schema
         self._create_tables()
 
-        self.logger.info("metadata_store_inicializado", db_path=str(self.db_path))
+        self.logger.info("silver_metadata_store_inicializado", db_path=str(self.db_path))
 
     def _create_tables(self) -> None:
-        """
-        Inicializa o esquema se não existir.
-        """
+        """Inicializa o esquema se não existir."""
 
         self.conn.execute(
             """
-            CREATE TABLE IF NOT EXISTS ingestao_metadata (
+            CREATE TABLE IF NOT EXISTS silver_metadata (
                 dataset TEXT NOT NULL,
                 ano INTEGER NOT NULL,
 
                 timestamp_inicio TIMESTAMP NOT NULL,
                 timestamp_fim TIMESTAMP NOT NULL,
 
-                linhas BIGINT,
-                tamanho_bytes BIGINT,
+                linhas_antes BIGINT,
+                linhas_depois BIGINT,
                 duracao_segundos DOUBLE,
                 status TEXT,
-                checksum TEXT,
                 erro TEXT,
 
                 PRIMARY KEY (dataset, ano)
@@ -67,40 +65,33 @@ class MetadataStore:
             """
         )
 
-        # Add missing columns if table already exists (migration)
-        self.conn.execute("ALTER TABLE ingestao_metadata ADD COLUMN IF NOT EXISTS status TEXT")
-        self.conn.execute("ALTER TABLE ingestao_metadata ADD COLUMN IF NOT EXISTS checksum TEXT")
-        self.conn.execute("ALTER TABLE ingestao_metadata ADD COLUMN IF NOT EXISTS erro TEXT")
-
-    def salvar(self, metadata: IngestaoMetadataDict) -> None:
+    def salvar(self, metadata: dict[str, Any]) -> None:
         """
-        Persiste metadados da ingestão no DuckDB.
+        Persiste metadados da transformação no DuckDB.
 
-        Usa UPSERT por ano para garantir idempotência."""
-
+        Usa UPSERT por ano para garantir idempotência.
+        """
         self.conn.execute(
             """
-            INSERT INTO ingestao_metadata (
+            INSERT INTO silver_metadata (
                 dataset,
                 ano,
                 timestamp_inicio,
                 timestamp_fim,
-                linhas,
-                tamanho_bytes,
+                linhas_antes,
+                linhas_depois,
                 duracao_segundos,
                 status,
-                checksum,
                 erro
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT (dataset, ano) DO UPDATE SET
                 timestamp_inicio = excluded.timestamp_inicio,
                 timestamp_fim = excluded.timestamp_fim,
-                linhas = excluded.linhas,
-                tamanho_bytes = excluded.tamanho_bytes,
+                linhas_antes = excluded.linhas_antes,
+                linhas_depois = excluded.linhas_depois,
                 duracao_segundos = excluded.duracao_segundos,
                 status = excluded.status,
-                checksum = excluded.checksum,
                 erro = excluded.erro
             """,
             (
@@ -108,30 +99,27 @@ class MetadataStore:
                 metadata["ano"],
                 metadata["inicio"],
                 metadata["fim"],
-                metadata["linhas"],
-                metadata["tamanho_bytes"],
+                metadata["linhas_antes"],
+                metadata["linhas_depois"],
                 metadata["duracao_segundos"],
                 metadata["status"],
-                metadata["checksum"],
                 metadata["erro"],
             ),
         )
 
         self.logger.success(
-            "metadata_salvo",
+            "silver_metadata_salvo",
             ano=metadata["ano"],
             status=metadata["status"],
         )
 
     def buscar(self, dataset: str, ano: int) -> dict[str, Any] | None:
-        """
-        Busca metadados de uma ingestão específica.
-        """
+        """Busca metadados de uma transformação específica."""
 
         row = self.conn.execute(
             """
             SELECT *
-            FROM ingestao_metadata
+            FROM silver_metadata
             WHERE dataset = ? AND ano = ?
             """,
             (dataset, ano),
@@ -144,17 +132,12 @@ class MetadataStore:
         return dict(zip(columns, row, strict=False))
 
     def listar_todos(self) -> list[dict[str, Any]]:
-        """
-        Lista todas as entradas de metadados de ingestão.
-
-        Returns:
-            Lista de dicionários de metadados
-        """
+        """Lista todas as entradas de metadados de transformação."""
 
         rows = self.conn.execute(
             """
             SELECT *
-            FROM ingestao_metadata
+            FROM silver_metadata
             ORDER BY ano DESC
             """
         ).fetchall()
@@ -169,7 +152,7 @@ class MetadataStore:
         """Fecha a conexão com o DuckDB."""
         self.conn.close()
 
-    def __enter__(self) -> "MetadataStore":
+    def __enter__(self) -> "SilverMetadataStore":
         """Suporta uso com contexto 'with'."""
         return self
 

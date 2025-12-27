@@ -39,7 +39,7 @@ class ComparecimentoContrato:
     # - o dataset perde significado analítico
     # - a ingestão deve FALHAR
     #
-    # Note que aqui só falamos de NOMES e SIGNIFICADO,
+    # Observe que aqui só falamos de NOMES e SIGNIFICADO,
     # não de tipos ou parsing.
     CAMPOS_OBRIGATORIOS: ClassVar[list[str]] = [
         "ANO_ELEICAO",  # ano do pleito (dimensão temporal)
@@ -48,7 +48,7 @@ class ComparecimentoContrato:
         "SG_UF",  # estado (dimensão geográfica)
         "QT_APTOS",  # eleitores aptos (métrica base)
         "QT_COMPARECIMENTO",  # eleitores que votaram
-        "QT_ABSTENCOES",  # eleitores que se abstiveram
+        "QT_ABSTENCAO",  # eleitores que se abstiveram
     ]
 
     # Campos que podem existir, mas não são críticos.
@@ -88,6 +88,5 @@ class ComparecimentoContrato:
             "minimo": 0,
             "descricao": "Quantidade de eleitores que compareceram",
         },
-        "QT_ABSTENCOES": {"tipo": "inteiro", "minimo": 0, "descricao": "Quantidade de abstenções"},
+        "QT_ABSTENCAO": {"tipo": "inteiro", "minimo": 0, "descricao": "Quantidade de abstenções"},
     }
-

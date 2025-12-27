@@ -7,7 +7,7 @@ com foco inicial na camada Bronze.
 
 - Fonte: Dados públicos do TSE
 - Processamento: Python + Polars
-- Armazenamento: Parquet
+- Armazenamento: Parquet (Bronze e Silver)
 - Metadados: DuckDB
 - Execução: CLI (Typer) e Airflow
 
@@ -19,9 +19,50 @@ com foco inicial na camada Bronze.
 - **Validação**: Schema explícito com falha em inconsistência
 - **Organização**: Particionada por dataset e ano
 
-### 2. Componentes de Processamento
+### 2. Camada Silver
+- **Objetivo**: Dados transformados e enriquecidos para análise
+- **Formato**: Parquet otimizado para consultas analíticas
+- **Enriquecimento**:
+  - Taxas calculadas (comparecimento%, abstenção%)
+  - Mapeamento geográfico (UF → Região)
+  - Validação de qualidade (remoção de nulos)
+- **Organização**: Particionada por dataset e ano
+- **Metadados**: DuckDB para rastreabilidade de transformações
+
+**Novos Componentes Implementados:**
+
+- **SilverTransformationPipeline**: Orquestrador do fluxo Bronze → Silver
+  - Coordena validação de schema, transformação e persistência
+  - Aplica idempotência (DuckDB + verificação de arquivo)
+  - Segue padrão consistente com IngestionPipeline (Bronze)
+
+- **SilverMetadataStore**: Gerencia metadados de transformação
+  - Usa DuckDB para rastreabilidade
+  - Chave primária: (dataset, ano)
+  - Campos: linhas_antes, linhas_depois, duracao_segundos, status, erro
+
+- **RegionMapper**: Mapeamento UF → Região geográfica
+  - Suporta todas as 27 UFs brasileiras
+  - Retorna "Desconhecido" para UF inválida
+
+- **SCHEMA_SILVER + Validação**: Schema físico Polars + validação contra contrato
+  - Define tipos Polars para todos os campos (bronze + silver)
+  - Função `validar_schema_silver_contra_contrato()` garante consistência
+
+- **BronzeToSilverTransformer**: Lógica de transformação
+  - Cálculo de taxas de comparecimento/abstenção
+  - Mapeamento geográfico
+  - Remoção de nulos
+  - Lazy evaluation com `pl.scan_parquet()`
+
+- **SilverTransformResult**: Result object imutável
+  - @dataclass(frozen=True)
+  - Contém: silver_path, linhas
+
+### 3. Componentes de Processamento
 - **Downloader**: Gerencia downloads com retry e controle de estado
 - **Converter**: Transforma dados brutos para formato analítico (Parquet)
+- **Transformer**: Enriquece dados Bronze → Silver (taxas, regiões)
 - **Schema Validation**: Validação integrada em contratos e schemas
 - **Logger**: Logging estruturado com suporte a diferentes formatos
 
@@ -30,19 +71,56 @@ com foco inicial na camada Bronze.
 - **Tecnologia**: DuckDB para consultas analíticas sobre metadados
 - **Informações**: Timestamps, origem, checksums, status de execução
 
-## Fluxo de Dados
+## Fluxo de Dados (Atualizado)
 
 ```
 TSE (CSV/ZIP)
     ↓
 Downloader (controle de estado, retry)
     ↓
-Converter (validação de schema, transformação)
+Conversor (validação de schema, transformação)
     ↓
-Bronze Layer (Parquet com metadados)
+Camada Bronze (Parquet com metadados)
     ↓
-Metadata Store (DuckDB - rastreabilidade)
+Validação Schema Bronze (schema físico vs contrato lógico)
+    ↓
+BronzeToSilverTransformer (cálculo de taxas, mapeamento geográfico)
+    ↓
+Validação Schema Silver (schema físico vs contrato lógico)
+    ↓
+Camada Silver (Parquet enriquecido)
+    ↓
+SilverMetadataStore (DuckDB - rastreabilidade)
+    ↓
+Pronto para consultas analíticas
 ```
+
+## Princípios de Consistência Bronze ↔ Silver
+
+### Orquestração
+- Bronze: `IngestionPipeline`
+- Silver: `SilverTransformationPipeline`
+- Ambos seguem padrão de docstring ("Esta classe:" / "Ela NÃO:")
+- Ambos aplicam injeção de dependência (logger, metadata_store)
+
+### MetadataStore
+- Bronze: `MetadataStore` (metadados de ingestão)
+- Silver: `SilverMetadataStore` (metadados de transformação)
+- Ambos usam DuckDB com UPSERT por (dataset, ano)
+
+### Schema Físico + Validação
+- Bronze: `SCHEMA_COMPARECIMENTO` + `validar_schema_contra_contrato()`
+- Silver: `SCHEMA_SILVER` + `validar_schema_silver_contra_contrato()`
+- Ambos garantem consistência domínio ↔ implementação
+
+### Lazy Evaluation
+- Ambos usam `pl.scan_parquet()` ao invés de `pl.read_parquet()`
+- Melhor performance em arquivos grandes
+
+### Result Objects
+- Bronze: `DownloadResult`, `ConvertResult`
+- Silver: `SilverTransformResult`
+- Todos são `@dataclass(frozen=True)`
 
 ## Características do Pipeline
 

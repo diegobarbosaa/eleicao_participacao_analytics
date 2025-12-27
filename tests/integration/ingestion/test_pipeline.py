@@ -1,7 +1,7 @@
 from participacao_eleitoral.ingestion.pipeline import IngestionPipeline
 
 
-def test_pipeline_fluxo_completo(tmp_path, settings, logger, monkeypatch):
+def test_pipeline_fluxo_completo(tmp_path, settings, logger, monkeypatch) -> None:  # type: ignore[no-untyped-def]
     """
     Pipeline deve executar fluxo completo sem erro.
     """
@@ -31,7 +31,7 @@ def test_pipeline_fluxo_completo(tmp_path, settings, logger, monkeypatch):
 
     # Cria CSV fake
     (tmp_path / "fake.csv").write_text(
-        "ANO_ELEICAO;CD_MUNICIPIO;NM_MUNICIPIO;SG_UF;QT_APTOS;QT_COMPARECIMENTO;QT_ABSTENCOES\n"
+        "ANO_ELEICAO;CD_MUNICIPIO;NM_MUNICIPIO;SG_UF;QT_APTOS;QT_COMPARECIMENTO;QT_ABSTENCAO\n"
         "2022;12345;Recife;PE;1000;800;200\n"
     )
 

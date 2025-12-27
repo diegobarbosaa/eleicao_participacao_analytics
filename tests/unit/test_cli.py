@@ -2,10 +2,9 @@
 
 import subprocess
 import sys
-from unittest.mock import patch, MagicMock
 
 
-def test_cli_help_principal():
+def test_cli_help_principal() -> None:
     """Testa se help principal mostra estrutura correta."""
     result = subprocess.run(
         [sys.executable, "-m", "participacao_eleitoral", "--help"], capture_output=True, text=True
@@ -17,7 +16,7 @@ def test_cli_help_principal():
     assert "utils" in result.stdout
 
 
-def test_cli_data_help():
+def test_cli_data_help() -> None:
     """Testa help do subcomando data."""
     result = subprocess.run(
         [sys.executable, "-m", "participacao_eleitoral", "data", "--help"],
@@ -30,10 +29,10 @@ def test_cli_data_help():
     assert "list-years" in result.stdout
 
 
-# Test removed as the tested experimental-features option was unused dead code
+# Teste removido pois a opção de recursos experimentais testada era código morto não usado
 
 
-def test_cli_utils_version():
+def test_cli_utils_version() -> None:
     """Testa comando utils version."""
     result = subprocess.run(
         [sys.executable, "-m", "participacao_eleitoral", "utils", "version"],
@@ -45,10 +44,10 @@ def test_cli_utils_version():
     assert "v1.0.0" in result.stdout
 
 
-# Test removed as the tested experimental features display was unused dead code
+# Teste removido pois a exibição de recursos experimentais testada era código morto não usado
 
 
-def test_cli_data_list_years():
+def test_cli_data_list_years() -> None:
     """Testa comando data list-years."""
     result = subprocess.run(
         [sys.executable, "-m", "participacao_eleitoral", "data", "list-years"],

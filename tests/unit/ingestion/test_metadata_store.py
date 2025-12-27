@@ -4,7 +4,7 @@ from participacao_eleitoral.core.contracts.ingestao_metadata import IngestaoMeta
 from participacao_eleitoral.ingestion.metadata_store import MetadataStore
 
 
-def test_metadata_store_persist_and_fetch(tmp_path, settings, logger):
+def test_metadata_store_persist_and_fetch(tmp_path, settings, logger) -> None:  # type: ignore[no-untyped-def]
     """
     MetadataStore deve salvar e recuperar metadados.
     """
@@ -35,7 +35,7 @@ def test_metadata_store_persist_and_fetch(tmp_path, settings, logger):
     assert fetched["status"] == "sucesso"
 
 
-def test_metadata_store_listar_todos(tmp_path, settings, logger):
+def test_metadata_store_listar_todos(tmp_path, settings, logger) -> None:  # type: ignore[no-untyped-def]
     """
     MetadataStore deve listar todas as ingestões.
     """
