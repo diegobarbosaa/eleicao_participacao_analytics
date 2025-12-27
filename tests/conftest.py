@@ -15,13 +15,14 @@ def settings(tmp_path: Path) -> Settings:
     - nenhum dado real sendo sobrescrito
     """
 
-    return Settings(
-        data_dir=tmp_path / "data",
-        bronze_dir=tmp_path / "data" / "bronze",
-        silver_dir=tmp_path / "data" / "silver",
-        gold_dir=tmp_path / "data" / "gold",
-        logs_dir=tmp_path / "logs",
-    )
+    # Criar diretórios temporários manualmente
+    (tmp_path / "data").mkdir(parents=True, exist_ok=True)
+    (tmp_path / "data" / "bronze").mkdir(parents=True, exist_ok=True)
+    (tmp_path / "data" / "silver").mkdir(parents=True, exist_ok=True)
+    (tmp_path / "data" / "gold").mkdir(parents=True, exist_ok=True)
+    (tmp_path / "logs").mkdir(parents=True, exist_ok=True)
+
+    return Settings()
 
 
 @pytest.fixture
