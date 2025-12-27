@@ -1,167 +1,141 @@
-"""Gerencia persistência de metadados de transformação Silver"""
-
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
+from contextlib import suppress
 
-import duckdb
-
+from duckdb import duckdb
 from participacao_eleitoral.config import Settings
 from participacao_eleitoral.utils.logger import ModernLogger
 
 
 class SilverMetadataStore:
     """
-    Gerência persistência de metadados de transformação Silver usando DuckDB.
-
+    Gerência de metadados da camada Silver.
+    
     Responsabilidades:
-    - Garantir idempotência (dataset + ano)
+    - Garantir idempotência (UPSERT por dataset + ano)
     - Auditar execuções de transformação
     - Servir como fonte de observabilidade do pipeline Silver
     """
 
-    def __init__(
-        self,
-        settings: Settings,
-        logger: ModernLogger,
-        db_path: Path | None = None,
-    ):
+    def __init__(self, settings: Settings, logger: ModernLogger) -> None:
+        """
+        Inicializa conexão com DuckDB.
+        """
         self.settings = settings
         self.logger = logger
+        self.db_path = self.settings.silver_dir / "_metadata.duckdb"
 
-        # Caminho do banco de metadados (silver)
-        self.db_path = db_path or self.settings.silver_dir / "_metadata.duckdb"
-
-        # Garante que o diretório existe
-        self.db_path.parent.mkdir(parents=True, exist_ok=True)
-
-        # Conexão DuckDB (arquivo local)
-        self.conn = duckdb.connect(str(self.db_path))
-
-        # Inicializa schema
-        self._create_tables()
-
-        self.logger.info("silver_metadata_store_inicializado", db_path=str(self.db_path))
-
-    def _create_tables(self) -> None:
-        """Inicializa o esquema se não existir."""
-
-        self.conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS silver_metadata (
-                dataset TEXT NOT NULL,
-                ano INTEGER NOT NULL,
-
-                timestamp_inicio TIMESTAMP NOT NULL,
-                timestamp_fim TIMESTAMP NOT NULL,
-
-                linhas_antes BIGINT,
-                linhas_depois BIGINT,
-                duracao_segundos DOUBLE,
-                status TEXT,
-                erro TEXT,
-
-                PRIMARY KEY (dataset, ano)
-            )
-            """
-        )
-
-    def salvar(self, metadata: dict[str, Any]) -> None:
+    def salvar(self, dataset: str, ano: int, timestamp_inicio: str, timestamp_fim: str, 
+               linhas_antes: int, linhas_depois: int, duracao_segundos: float, 
+               checksum: str, erro: str | None) -> None:
         """
-        Persiste metadados da transformação no DuckDB.
-
-        Usa UPSERT por ano para garantir idempotência.
+        Salva metadados de sucesso da transformação Silver no DuckDB.
         """
-        self.conn.execute(
-            """
-            INSERT INTO silver_metadata (
-                dataset,
-                ano,
-                timestamp_inicio,
-                timestamp_fim,
-                linhas_antes,
-                linhas_depois,
-                duracao_segundos,
-                status,
-                erro
-            )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ON CONFLICT (dataset, ano) DO UPDATE SET
-                timestamp_inicio = excluded.timestamp_inicio,
-                timestamp_fim = excluded.timestamp_fim,
-                linhas_antes = excluded.linhas_antes,
-                linhas_depois = excluded.linhas_depois,
-                duracao_segundos = excluded.duracao_segundos,
-                status = excluded.status,
-                erro = excluded.erro
-            """,
-            (
-                metadata["dataset"],
-                metadata["ano"],
-                metadata["inicio"],
-                metadata["fim"],
-                metadata["linhas_antes"],
-                metadata["linhas_depois"],
-                metadata["duracao_segundos"],
-                metadata["status"],
-                metadata["erro"],
-            ),
-        )
-
-        self.logger.success(
-            "silver_metadata_salvo",
-            ano=metadata["ano"],
-            status=metadata["status"],
-        )
+        columns = ["dataset", "ano", "status", "inicio", "fim", "duracao_segundos", "linhas_antes", "linhas_depois", "checksum", "erro"]
+        
+        values = (dataset, ano, "SUCESSO", timestamp_inicio.isoformat(), 
+                 timestamp_fim.isoformat(), 
+                 duracao_segundos, linhas_antes, linhas_depois, checksum, "")
+        
+        try:
+            with suppress(OSError):
+                self.conn.execute(
+                    f"INSERT INTO silver_metadata (dataset, ano, status, inicio, fim, duracao_segundos, "
+                    f"linhas_antes, linhas_depois, checksum, erro) "
+                    f"VALUES ({dataset}, {ano}, {timestamp_inicio}, {timestamp_fim}, {duracao_segundos}, "
+                    f"linhas_antes, linhas_depois, checksum, erro})"
+                )
+                self.logger.success(f"silver_metadata_salvo", dataset=dataset, ano=ano)
+        except Exception as e:
+            self.logger.error(f"Erro ao salvar metadata Silver: {e}", e)
 
     def buscar(self, dataset: str, ano: int) -> dict[str, Any] | None:
-        """Busca metadados de uma transformação específica."""
-
-        row = self.conn.execute(
-            """
-            SELECT *
-            FROM silver_metadata
-            WHERE dataset = ? AND ano = ?
-            """,
-            (dataset, ano),
-        ).fetchone()
-
-        if not row:
+        """
+        Busca metadados de uma transformação específica (dataset + ano).
+        """
+        try:
+            with suppress(OSError):
+                row = self.conn.execute(
+                    f"SELECT * FROM silver_metadata WHERE dataset = ? AND ano = ?"
+                f"LIMIT 1"
+                params=(dataset, ano)
+                )
+        except Exception as e:
+            self.logger.error(f"Erro ao buscar metadata: {dataset} {dataset}, ano={ano}", e)
             return None
 
-        columns = [c[0] for c in self.conn.description]
-        return dict(zip(columns, row, strict=False))
-
     def listar_todos(self) -> list[dict[str, Any]]:
-        """Lista todas as entradas de metadados de transformação."""
-
-        rows = self.conn.execute(
-            """
-            SELECT *
-            FROM silver_metadata
-            ORDER BY ano DESC
-            """
-        ).fetchall()
-
-        if not rows:
+        """
+        Lista todas as entradas de metadados de transformação.
+        """
+        try:
+            with suppress(OSError):
+                rows = self.conn.execute(
+                    f"SELECT * FROM silver_metadata ORDER BY ano DESC"
+                    )
+                return [dict(zip(
+                    dataset=str(row["dataset"]),
+                    ano=int(row["ano"]),
+                    status=row["status"],
+                    inicio=row["inicio"],
+                    fim=row["fim"],
+                    duracao_segundos=float(row["duracao_segundos"]),
+                    linhas_antes=int(row["linhas_antes"]),
+                    linhas_depois=int(row["linhas_depois"]),
+                    checksum=row["checksum"],
+                    erro=row["erro"]
+                ) for row in rows
+                )
+        except Exception as e:
+            self.logger.error(f"Erro ao listar metadados: {e}", e)
             return []
 
-        columns = [c[0] for c in self.conn.description]
-        return [dict(zip(columns, row, strict=False)) for row in rows]
+    def upsert_idempotencia(self, dataset: str, ano: int,
+                              linhas_antes: int, linhas_depois: int, 
+                              duracao_segundos: float, checksum: str) -> bool:
+        """
+        Atualiza (UPSERT ou cria) metadados se não existirem.
+        
+        Retorna True se atualizou, False se foi criação nova.
+        """
+        try:
+            with suppress(OSError):
+            result = self.conn.execute(
+                f"INSERT INTO silver_metadata "
+                f"(dataset, ano, status, inicio, fim, duracao_segundos, "
+                f"linhas_antes, linhas_depois, checksum, erro) "
+                f") "
+                f"ON CONFLICT (dataset, ano) DO UPDATE SET "
+                f"WHERE linhas_antes = ?"
+                )
+            )
+            count = result.rowcount
+            if count == 0:
+                self.logger.info(f"Nenhum registro encontrado com dataset={dataset}, ano={ano}")
+                return True
+            else:
+                self.logger.warning(f"Conflito de idempotência: {dataset={dataset}, ano={ano}")
+                return False
+        except Exception as e:
+            self.logger.error(f"Erro ao verificar idempotência: {e}", e)
+            return False
 
-    def close(self) -> None:
-        """Fecha a conexão com o DuckDB."""
-        self.conn.close()
+    def _inicializa_tabela(self) -> None:
+        """
+        Inicializa tabela no DuckDB se não existir.
+        """
+        with suppress(OSError):
+            self.conn.execute(
+                f"CREATE TABLE IF NOT EXISTS silver_metadata ("
+                f"dataset TEXT, "
+                f"ano INTEGER NOT NULL,"
+                f"linhas_antes BIGINT,"
+                f"linhas_depois BIGINT,"
+                f"duracao_segundos DOUBLE,"
+                f"status TEXT,"
+                f"erro TEXT,"
+                f"PRIMARY KEY (dataset, ano)"
+                f")"
+            )
 
-    def __enter__(self) -> "SilverMetadataStore":
-        """Suporta uso com contexto 'with'."""
-        return self
-
-    def __exit__(
-        self,
-        exc_type: type[BaseException] | None,
-        exc_val: BaseException | None,
-        exc_tb: object,
-    ) -> bool:
-        """Fecha conexão ao sair do contexto."""
-        self.close()
-        return False  # Não suprimir exceções
+        return
