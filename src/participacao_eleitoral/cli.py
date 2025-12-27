@@ -9,14 +9,14 @@ from participacao_eleitoral.config import Settings
 
 # Pipeline orquestrador
 from participacao_eleitoral.ingestion.pipeline import IngestionPipeline
-
-# Logger estruturado
-from participacao_eleitoral.utils.logger import ModernLogger
+from participacao_eleitoral.silver.region_mapper import RegionMapper
+from participacao_eleitoral.silver.schemas.comparecimento_silver import SCHEMA_SILVER
 
 # Transformação Silver (importados no topo para evitar erros de importação)
 from participacao_eleitoral.silver.transformer import BronzeToSilverTransformer
-from participacao_eleitoral.silver.region_mapper import RegionMapper
-from participacao_eleitoral.silver.schemas.comparecimento_silver import SCHEMA_SILVER
+
+# Logger estruturado
+from participacao_eleitoral.utils.logger import ModernLogger
 
 # Criamos a aplicação CLI
 # Isso permite futuramente:

@@ -1,11 +1,12 @@
 """Configuração centralizada do projeto usando Pydantic Settings"""
 
+import contextlib
 import os
 from pathlib import Path
 from typing import Literal
 from urllib.parse import urlparse
 
-from pydantic import Field, field_validator, computed_field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -119,8 +120,6 @@ class Settings(BaseSettings):
             self.gold_dir,
             self.logs_dir,
         ):
-            try:
-                path.mkdir(parents=True, exist_ok=True)
-            except OSError:
+            with contextlib.suppress(OSError):
                 # Silenciar erro de criação de diretório (comum em containers read-only)
-                pass
+                path.mkdir(parents=True, exist_ok=True)

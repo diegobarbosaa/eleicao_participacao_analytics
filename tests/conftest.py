@@ -1,7 +1,6 @@
 from pathlib import Path
 
 import pytest
-
 from participacao_eleitoral.config import Settings
 from participacao_eleitoral.utils.logger import ModernLogger
 
@@ -16,22 +15,14 @@ def settings(tmp_path: Path) -> Settings:
     - nenhum dado real sendo sobrescrito
     """
 
-    settings = Settings()
+    return Settings(
+        data_dir=tmp_path / "data",
+        bronze_dir=tmp_path / "data" / "bronze",
+        silver_dir=tmp_path / "data" / "silver",
+        gold_dir=tmp_path / "data" / "gold",
+        logs_dir=tmp_path / "logs",
+    )
 
-    # Redireciona paths para ambiente temporário
-    settings.data_dir = tmp_path / "data"
-    settings.bronze_dir = settings.data_dir / "bronze"
-    settings.silver_dir = settings.data_dir / "silver"
-    settings.gold_dir = settings.data_dir / "gold"
-    settings.logs_dir = tmp_path / "logs"
-
-    # Garante que os diretórios existam
-    settings.bronze_dir.mkdir(parents=True, exist_ok=True)
-    settings.silver_dir.mkdir(parents=True, exist_ok=True)
-    settings.gold_dir.mkdir(parents=True, exist_ok=True)
-    settings.logs_dir.mkdir(parents=True, exist_ok=True)
-
-    return settings
 
 @pytest.fixture
 def logger() -> ModernLogger:

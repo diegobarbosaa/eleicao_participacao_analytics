@@ -102,8 +102,7 @@ class ModernLogger:
             plain_parts.append(message)
             if merged_context:
                 plain_parts.append(self._format_context(**merged_context))
-            plain_text = " ".join(plain_parts)
-            # print(plain_text)  # Removido - self.console.print(text) já formata a saída Rich
+            # print(" ".join(plain_parts))  # Removido - self.console.print(text) já formata a saída Rich
         else:
             # Saída formatada com Rich para CLI
             text = Text()
@@ -169,6 +168,6 @@ class ModernLogger:
             with open(log_file, "a", encoding="utf-8") as f:
                 f.write(json.dumps(log_entry, ensure_ascii=False) + "\n")
 
-        except Exception as e:
+        except Exception:
             # Silenciar erros de escrita de log (comum em containers read-only)
             pass

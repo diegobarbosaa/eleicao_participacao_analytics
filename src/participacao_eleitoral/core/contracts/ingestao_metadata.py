@@ -1,7 +1,7 @@
-from typing import TypedDict
+from typing import TypedDict, NotRequired
 
 
-class IngestaoMetadataDict(TypedDict):
+class IngestaoMetadataDict(TypedDict, total=False):
     """
     Contrato LÓGICO de metadados de ingestão.
 
@@ -21,3 +21,5 @@ class IngestaoMetadataDict(TypedDict):
     tamanho_bytes: int
     checksum: str
     erro: str | None
+    linhas_antes: NotRequired[int]
+    linhas_depois: NotRequired[int]
