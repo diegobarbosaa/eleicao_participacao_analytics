@@ -1,10 +1,9 @@
 """Serviços de construção de metadados Silver"""
 
 from datetime import UTC, datetime
-from typing import Literal
 
-from participacao_eleitoral.core.contracts.silver_metadata import SilverMetadataDict
 from participacao_eleitoral.core.contracts.ingestao_metadata import IngestaoMetadataDict
+from participacao_eleitoral.core.contracts.silver_metadata import SilverMetadataDict
 from participacao_eleitoral.core.entities import Dataset
 from participacao_eleitoral.core.enums import StatusIngestao
 

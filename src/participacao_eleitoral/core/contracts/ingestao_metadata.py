@@ -1,4 +1,4 @@
-from typing import TypedDict, NotRequired
+from typing import TypedDict
 
 
 class IngestaoMetadataDict(TypedDict, total=False):
@@ -21,5 +21,5 @@ class IngestaoMetadataDict(TypedDict, total=False):
     tamanho_bytes: int
     checksum: str
     erro: str | None
-    linhas_antes: NotRequired[int]
-    linhas_depois: NotRequired[int]
+    linhas_antes: int
+    linhas_depois: int
