@@ -34,5 +34,5 @@ uv run pytest tests/unit/ --cov=src --cov-report=term-missing -q
 ## Coverage
 
 - **Threshold CI**: 80%
-- **Atual**: 91% (apenas testes unitários)
+- **Atual**: 98% (apenas testes unitários)
 - **Total**: 98 testes unitários

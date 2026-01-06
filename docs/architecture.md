@@ -66,7 +66,7 @@ com foco inicial na camada Bronze.
 - **Schema Validation**: Validação integrada em contratos e schemas
 - **Logger**: Logging estruturado com suporte a diferentes formatos
 
-### 3. Camada de Metadados
+### 4. Camada de Metadados
 - **Objetivo**: Rastreabilidade e auditoria das execuções
 - **Tecnologia**: DuckDB para consultas analíticas sobre metadados
 - **Informações**: Timestamps, origem, checksums, status de execução

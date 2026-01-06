@@ -52,7 +52,7 @@ O schema exato pode ser consultado via CLI:
 uv run participacao-eleitoral validate schema comparecimento
 ```
 
-### Camada Silver (Implementada ✅)
+### Camada Silver (Implementada)
 
 Dados transformados e enriquecidos para análise de participação eleitoral.
 

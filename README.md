@@ -5,17 +5,17 @@
 [![Python](https://img.shields.io/badge/python-3.11-blue)](https://img.shields.io/badge/python-3.11-blue)
 [![License](https://img.shields.io/badge/license-MIT-green)](https://img.shields.io/badge/license-MIT-green)
 
-Pipeline de dados production-ready para ingestão, transformação e orquestração de dados eleitorais do TSE usando arquitetura Lakehouse.
+Pipeline de dados pronto para produção para ingestão, transformação e orquestração de dados eleitorais do TSE usando arquitetura Lakehouse.
 
 ## Stack Tecnológica
 
 ### Core ETL
-- **Python 3.11+** | **Polars** (engine analítica 10x mais rápida que Pandas)
-- **Pydantic** (validação de schemas) | **DuckDB** (metadados analíticos)
-- **PyArrow** (Parquet/CSV I/O) | **Tenacity** (retry strategies)
+- **Python 3.11+** | **Polars** (engine analítico 10x mais rápida que Pandas)
+- **Pydantic** (validação de esquemas) | **DuckDB** (metadados analíticos)
+- **PyArrow** (Parquet/CSV I/O) | **Tenacity** (estratégias de retry)
 
 ### Orquestração & Infra
-- **Apache Airflow** (DAGs production-ready com retry, timeout, SLAs)
+- **Apache Airflow** (DAGs prontos para produção com retry, timeout, SLAs)
 - **Docker** | **Astro Runtime** (Airflow-as-Code)
 - **GitHub Actions** (CI/CD automatizado com cache de dependências)
 
@@ -62,7 +62,7 @@ TSE (CSV) → Ingestão → Bronze (Parquet + DuckDB)
 ## Quick Start
 
 ```bash
-git clone <repo>
+git clone https://github.com/diegobarbosaa/eleicao_participacao_analytics
 cd eleicao_participacao_analytics
 uv sync
 

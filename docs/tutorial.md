@@ -17,7 +17,7 @@ O projeto ingere dados brutos do TSE (CSV), transforma em Bronze (Parquet), enri
 
 1. **Clone o repositório** (se não estiver clonado):
    ```
-   git clone https://github.com/sst/opencode.git  # Substitua pelo URL real
+    git clone https://github.com/diegobarbosaa/eleicao_participacao_analytics
    cd eleicao_participacao_analytics
    ```
 
@@ -32,7 +32,7 @@ O projeto ingere dados brutos do TSE (CSV), transforma em Bronze (Parquet), enri
 Esta é a forma mais simples para desenvolvimento/testes.
 
 1. **Navegue para o diretório do projeto**:
-   Abra PowerShell ou CMD e vá para `E:\DEV\eleicao_participacao_analytics`.
+    Abra PowerShell ou CMD e vá para o diretório do projeto.
 
 2. **Execute ingestão de dados** (exemplo para 2014):
    ```
@@ -92,5 +92,5 @@ Após transformação:
 
 Para mais detalhes, consulte [README.md](../README.md) ou [Arquitetura](architecture.md).
 
-Boa sorte com o processamento dos dados eleitorais! 🇧🇷</content>
+Boa sorte com o processamento dos dados eleitorais!</content>
 <parameter name="filePath">docs/tutorial.md
