@@ -2,17 +2,13 @@
 
 import polars as pl
 import pytest
-from pathlib import Path
 
-from participacao_eleitoral.config import Settings
 from participacao_eleitoral.silver.pipeline import SilverTransformationPipeline
-from participacao_eleitoral.silver.region_mapper import RegionMapper
 
 
-def test_pipeline_idempotencia_execucao_repetida(tmp_path, logger):
+def test_pipeline_idempotencia_execucao_repetida(settings, logger):
     """Pipeline deve ser idempotente (execução repetida não retransforma)."""
-    # Criar bronze fake no path correto
-    bronze_dir = tmp_path / "comparecimento_abstencao" / "year=2022"
+    bronze_dir = settings.bronze_dir / "comparecimento_abstencao" / "year=2022"
     bronze_dir.mkdir(parents=True, exist_ok=True)
     bronze_path = bronze_dir / "data.parquet"
     df_bronze = pl.DataFrame(
@@ -30,17 +26,13 @@ def test_pipeline_idempotencia_execucao_repetida(tmp_path, logger):
     )
     df_bronze.write_parquet(bronze_path)
 
-    settings = Settings()
-    settings.bronze_dir = tmp_path
-    settings.silver_dir = tmp_path / "silver"
-
     # Primeira execução
     pipeline = SilverTransformationPipeline(settings=settings, logger=logger)
     pipeline.run(2022)
 
     # Verifica se silver foi criado
     silver_path = (
-        tmp_path / "silver" / "comparecimento_abstencao_silver" / "year=2022" / "data.parquet"
+        settings.silver_dir / "comparecimento_abstencao_silver" / "year=2022" / "data.parquet"
     )
     assert silver_path.exists()
 
@@ -61,10 +53,9 @@ def test_pipeline_idempotencia_execucao_repetida(tmp_path, logger):
     # Verifica que o início não mudou (foi mantido da primeira execução)
 
 
-def test_pipeline_fluxo_completo_sucesso(tmp_path, logger):
+def test_pipeline_fluxo_completo_sucesso(settings, logger):
     """Pipeline deve executar fluxo completo com sucesso."""
-    # Criar bronze fake no path correto
-    bronze_dir = tmp_path / "comparecimento_abstencao" / "year=2022"
+    bronze_dir = settings.bronze_dir / "comparecimento_abstencao" / "year=2022"
     bronze_dir.mkdir(parents=True, exist_ok=True)
     bronze_path = bronze_dir / "data.parquet"
     df_bronze = pl.DataFrame(
@@ -82,16 +73,12 @@ def test_pipeline_fluxo_completo_sucesso(tmp_path, logger):
     )
     df_bronze.write_parquet(bronze_path)
 
-    settings = Settings()
-    settings.bronze_dir = tmp_path
-    settings.silver_dir = tmp_path / "silver"
-
     pipeline = SilverTransformationPipeline(settings=settings, logger=logger)
     pipeline.run(2022)
 
     # Verifica silver foi criado
     silver_path = (
-        tmp_path / "silver" / "comparecimento_abstencao_silver" / "year=2022" / "data.parquet"
+        settings.silver_dir / "comparecimento_abstencao_silver" / "year=2022" / "data.parquet"
     )
     assert silver_path.exists()
 
@@ -108,14 +95,10 @@ def test_pipeline_fluxo_completo_sucesso(tmp_path, logger):
     assert "NOME_REGIAO" in df_silver.columns
 
 
-def test_pipeline_bronze_inexistente_skip(tmp_path, logger):
+def test_pipeline_bronze_inexistente_skip(settings, logger):
     """Pipeline deve fazer skip se bronze não existe."""
-    settings = Settings()
-    settings.bronze_dir = tmp_path
-    settings.silver_dir = tmp_path / "silver"
-
     # Bronze não existe
-    bronze_path = tmp_path / "bronze.parquet"
+    bronze_path = settings.bronze_dir / "bronze.parquet"
     assert not bronze_path.exists()
 
     pipeline = SilverTransformationPipeline(settings=settings, logger=logger)
@@ -123,7 +106,7 @@ def test_pipeline_bronze_inexistente_skip(tmp_path, logger):
 
     # Não deve criar silver nem salvar metadata de sucesso
     silver_path = (
-        tmp_path / "silver" / "comparecimento_abstencao_silver" / "year=2022" / "data.parquet"
+        settings.silver_dir / "comparecimento_abstencao_silver" / "year=2022" / "data.parquet"
     )
     assert not silver_path.exists()
 
@@ -134,10 +117,9 @@ def test_pipeline_bronze_inexistente_skip(tmp_path, logger):
     assert metadata is None
 
 
-def test_pipeline_erro_salva_metadata_falha(tmp_path, logger):
+def test_pipeline_erro_salva_metadata_falha(settings, logger):
     """Pipeline deve salvar metadata de falha em caso de erro."""
-    # Criar bronze no path correto mas sem colunas obrigatórias (causará erro)
-    bronze_dir = tmp_path / "comparecimento_abstencao" / "year=2022"
+    bronze_dir = settings.bronze_dir / "comparecimento_abstencao" / "year=2022"
     bronze_dir.mkdir(parents=True, exist_ok=True)
     bronze_path = bronze_dir / "data.parquet"
     df_bronze = pl.DataFrame(
@@ -149,14 +131,10 @@ def test_pipeline_erro_salva_metadata_falha(tmp_path, logger):
     )
     df_bronze.write_parquet(bronze_path)
 
-    settings = Settings()
-    settings.bronze_dir = tmp_path
-    settings.silver_dir = tmp_path / "silver"
-
     pipeline = SilverTransformationPipeline(settings=settings, logger=logger)
 
     # Deve levantar erro
-    with pytest.raises(Exception):
+    with pytest.raises(Exception):  # noqa: B017
         pipeline.run(2022)
 
     # Deve salvar metadata de falha
@@ -168,13 +146,9 @@ def test_pipeline_erro_salva_metadata_falha(tmp_path, logger):
     assert metadata["linhas_depois"] == 0
 
 
-def test_pipeline_valida_schema(tmp_path, logger):
+def test_pipeline_valida_schema(settings, logger):
     """Pipeline deve validar schema contra contrato."""
-    settings = Settings()
-    settings.bronze_dir = tmp_path
-    settings.silver_dir = tmp_path / "silver"
-
-    pipeline = SilverTransformationPipeline(settings=settings, logger=logger)
+    _ = SilverTransformationPipeline(settings=settings, logger=logger)
 
     # Se schema físico não tiver campo obrigatório, deve falhar
     # Este teste verifica se a validação está sendo chamada
@@ -187,12 +161,13 @@ def test_pipeline_valida_schema(tmp_path, logger):
     validar_schema_silver_contra_contrato()  # Não deve levantar erro
 
 
-def test_pipeline_injeta_metadata_store(tmp_path, logger):
+def test_pipeline_injeta_metadata_store(settings, logger):
     """Pipeline deve permitir injeção de MetadataStore (útil para testes)."""
     from participacao_eleitoral.silver.metadata_store import SilverMetadataStore
 
-    # Criar bronze fake
-    bronze_path = tmp_path / "bronze.parquet"
+    bronze_dir = settings.bronze_dir / "comparecimento_abstencao" / "year=2022"
+    bronze_dir.mkdir(parents=True, exist_ok=True)
+    bronze_path = bronze_dir / "data.parquet"
     df_bronze = pl.DataFrame(
         {
             "ANO_ELEICAO": [2022],
@@ -208,12 +183,8 @@ def test_pipeline_injeta_metadata_store(tmp_path, logger):
     )
     df_bronze.write_parquet(bronze_path)
 
-    settings = Settings()
-    settings.bronze_dir = tmp_path
-    settings.silver_dir = tmp_path / "silver"
-
     # Criar metadata store customizado
-    custom_db_path = tmp_path / "custom.duckdb"
+    custom_db_path = settings.silver_dir / "custom.duckdb"
     custom_store = SilverMetadataStore(
         settings=settings,
         logger=logger,
@@ -234,6 +205,6 @@ def test_pipeline_injeta_metadata_store(tmp_path, logger):
 
     # Verifica se custom store foi usado
     assert custom_db_path.exists()
-    metadata = custom_store.buscar("comparecimento_abstencao_silver", 2022)
+    _ = custom_store.buscar("comparecimento_abstencao_silver", 2022)
     # Como o bronze não existe, o pipeline faz skip e não salva metadata
     # Este comportamento pode ser ajustado conforme necessidade

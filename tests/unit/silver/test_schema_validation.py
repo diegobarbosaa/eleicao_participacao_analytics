@@ -1,6 +1,5 @@
 """Testes de validação de schema Silver"""
 
-import pytest
 
 from participacao_eleitoral.silver.schemas.comparecimento_silver import (
     SCHEMA_SILVER,

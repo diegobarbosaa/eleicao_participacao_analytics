@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import pytest
+
 from participacao_eleitoral.config import Settings
 from participacao_eleitoral.utils.logger import ModernLogger
 
@@ -22,7 +23,7 @@ def settings(tmp_path: Path) -> Settings:
     (tmp_path / "data" / "gold").mkdir(parents=True, exist_ok=True)
     (tmp_path / "logs").mkdir(parents=True, exist_ok=True)
 
-    return Settings()
+    return Settings(project_root=tmp_path)
 
 
 @pytest.fixture
