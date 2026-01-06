@@ -3,46 +3,46 @@
 ## Diagrama de Arquitetura
 
 ```mermaid
-graph TB
-    subgraph "Fonte de Dados"
-        TSE[TSE API<br/>Dados Públicos<br/>Eleitorais]
+    graph TB
+        subgraph "Fonte de Dados"
+            TSE["TSE API / Dados Públicos / Eleitorais"]
+
+        subgraph "Camada de Ingestão"
+            CLI["CLI / Comandos Ad-hoc"]
+            AF["Airflow / Orquestração"]
+            DL["Downloader / HTTP/ZIP"]
+            CV["Converter / CSV→Parquet"]
+            TR["Transformer / Bronze→Silver"]
+
+        subgraph "Lakehouse"
+            BRZ["Bronze Layer / Parquet Files / Dados Brutos"]
+            SLV["Silver Layer / Parquet Enriquecido / Taxas e Regiões"]
+            GLD["Gold Layer / Planejado"]
+
+        subgraph "Metadados"
+            META["Metadata Store / DuckDB / Rastreabilidade"]
+
+        TSE --> CLI
+        TSE --> AF
+        CLI --> DL
+        AF --> DL
+        DL --> CV
+        CV --> BRZ
+        TR --> SLV
+        BRZ --> SLV
+        SLV --> META
+        SLV --> GLD
+
+        subgraph "Core (Domínio)"
+            ENT["Entidades / Dataset"]
+            CNT["Contratos / Validação"]
+            SRV["Services / Regras de Negócio"]
+
+        BRZ --> ENT
+        BRZ --> CNT
+        SLV --> SRV
+
     end
-
-    subgraph "Camada de Ingestão"
-        CLI[CLI<br/>Comandos Ad-hoc]
-        AF[Airflow<br/>Orquestração]
-        DL[Downloader<br/>HTTP/ZIP]
-        CV[Converter<br/>CSV→Parquet]
-        TR[Transformer<br/>Bronze→Silver]
-    end
-
-    subgraph "Lakehouse"
-        BRZ[Bronze Layer<br/>Parquet Files<br/>(Dados Brutos)]
-        SLV[Silver Layer<br/>Parquet Enriquecido<br/>(Taxas e Regiões)]
-        GLD[Gold Layer<br/>(Planejado)]
-    end
-
-    subgraph "Metadados"
-        META[Metadata Store<br/>DuckDB<br/>Rastreabilidade]
-    end
-
-    subgraph "Core (Domínio)"
-        ENT[Entidades<br/>Dataset]
-        CNT[Contratos<br/>Validação]
-        SRV[Services<br/>Regras de Negócio]
-    end
-
-    TSE --> DL
-    CLI --> AF
-    AF --> DL
-    DL --> CV
-    CV --> BRZ
-    CV --> META
-    BRZ --> TR
-    TR --> SLV
-
-    ENT --> CNT
-    SRV --> META
 ```
 
 ## Diagrama de Fluxo de Dados
@@ -80,7 +80,7 @@ sequenceDiagram
         end
 
         Downloader->>Downloader: calcular checksum SHA-256
-        Downloader-->>Pipeline: DownloadResult<br/>(csv_path, tamanho, checksum)
+        Downloader-->>Pipeline: DownloadResult / (csv_path, tamanho, checksum)
 
         Pipeline->>Converter: convert(csv, parquet, schema, source)
 
@@ -89,7 +89,7 @@ sequenceDiagram
         Converter->>Converter: adicionar colunas técnicas
         Converter->>Storage: escrever Parquet
 
-        Converter-->>Pipeline: ConvertResult<br/>(parquet_path, linhas)
+        Converter-->>Pipeline: ConvertResult / (parquet_path, linhas)
 
         Pipeline->>Pipeline: remover CSV temporário
 
@@ -117,7 +117,7 @@ sequenceDiagram
         Transformer->>Transformer: remover nulos
         Transformer->>Storage: escrever Parquet silver
 
-        Transformer-->>CLI: SilverTransformResult<br/>(silver_path, linhas)
+        Transformer-->>CLI: SilverTransformResult / (silver_path, linhas)
         CLI-->>User: mensagem de sucesso
     end
 ```
@@ -134,9 +134,9 @@ graph LR
     ROOT --> DATA[data/]
     ROOT --> DOCS[docs/]
 
-    SRC --> CORE[core/<br/>domínio]
-    SRC --> ING[ingestion/<br/>infraestrutura]
-    SRC --> UTILS[utils/<br/>compartilhado]
+    SRC --> CORE[core/ / domínio]
+    SRC --> ING[ingestion/ / infraestrutura]
+    SRC --> UTILS[utils/ / compartilhado]
 
     CORE --> ENT[entities.py]
     CORE --> CNT[contracts/]
@@ -151,9 +151,9 @@ graph LR
 
     ING --> SCHE[schemas/]
 
-    DATA --> BRONZE[bronze/<br/>dados brutos]
-    DATA --> SILVER[silver/<br/>dados enriquecidos]
-    DATA --> GOLD[gold/<br/>métricas agregadas]
+    DATA --> BRONZE[bronze/ / dados brutos]
+    DATA --> SILVER[silver/ / dados enriquecidos]
+    DATA --> GOLD[gold/ / métricas agregadas]
 
     BRONZE --> COMP[comparecimento_abstencao/]
     COMP --> YEAR[year=2014/]
@@ -166,25 +166,27 @@ graph LR
 
 ## Diagrama de Camadas de Dados
 
-```mermaid
-graph TB
-    subgraph "Fonte Externa"
-        TSE_CSV[TSE CSV<br/>Dados Originais<br/>Semi-estruturado]
-    end
+    ```mermaid
+    graph TB
+        subgraph "Fonte de Dados"
+            TSE["TSE API / Dados Públicos / Eleitorais"]
+        end
 
-    subgraph "Camada Bronze"
-        PARQUET[Parquet<br/>Colunas Técnicas<br/>+ Metadados]
-    end
+        subgraph "Camada de Ingestão"
+            CLI["CLI / Comandos Ad-hoc"]
+            AF["Airflow / Orquestração"]
+            DL["Downloader / HTTP / ZIP"]
+            CV["Converter / CSV para Parquet"]
+            TR["Transformer / Bronze para Silver"]
+        end
 
-    subgraph "Camada Silver"
-        SILVER[Parquet Limpo<br/>Taxas Calculadas<br/>Mapeamento Geográfico]
-    end
+        subgraph "Lakehouse"
+            BRZ["Bronze Layer / Parquet Files / Dados Brutos"]
+            SLV["Silver Layer / Parquet Enriquecido / Taxas e Regiões"]
+            GLD["Gold Layer / Planejado"]
+        end
 
-    subgraph "Camada Gold (Planejado)"
-        GOLD[Métricas Agregadas<br/>KPIs de Negócio<br/>Pronto para BI]
-    end
-
-    TSE_CSV --> PARQUET
-    PARQUET --> SILVER
-    SILVER --> GOLD
-```
+        subgraph "Metadados"
+            META["Metadata Store / DuckDB / Rastreabilidade"]
+        end
+    ```
