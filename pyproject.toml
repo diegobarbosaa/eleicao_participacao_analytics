@@ -201,4 +201,4 @@ exclude_lines = [
 
 fail_under = 70
 skip_covered = false
-show_missing = true
+show_missing = false  # Otimiza coverage (não mostra linhas não cobertas no terminal)
