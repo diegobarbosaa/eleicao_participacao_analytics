@@ -1,7 +1,7 @@
 from typing import TypedDict
 
 
-class IngestaoMetadataDict(TypedDict, total=False):
+class IngestaoMetadataDict(TypedDict, total=False, total=False):
     """
     Contrato LÓGICO de metadados de ingestão.
 
