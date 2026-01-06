@@ -422,4 +422,3 @@ RUN pip install -e /app/  # Instala o pacote em modo desenvolvimento
 
 **Decisão Final:**
 Apesar de `sys.path` não ser idiomático, é a melhor solução para Airflow com projetos monorepo. A configuração centralizada em `_shared.py` reduz complexidade e funciona consistentemente em todos os ambientes.
-```
