@@ -150,7 +150,8 @@ class ModernLogger:
         if self.log_file is None:
             return
         try:
-            assert self.log_file is not None
+            if self.log_file is None:
+                raise ValueError("Arquivo de log não configurado")
             log_file = Path(self.log_file)
             log_file.parent.mkdir(parents=True, exist_ok=True)
 

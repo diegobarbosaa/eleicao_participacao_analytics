@@ -1,4 +1,3 @@
-```md
 # Registros de Decisão Arquitetural (ADR)
 
 Este documento registra decisões arquiteturais relevantes tomadas ao longo

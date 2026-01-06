@@ -1,7 +1,7 @@
 from typing import TypedDict
 
 
-class SilverMetadataDict(TypedDict, total=False, total=False):
+class SilverMetadataDict(TypedDict, total=False):
     """
     Contrato LÓGICO de metadados da camada Silver.
 
