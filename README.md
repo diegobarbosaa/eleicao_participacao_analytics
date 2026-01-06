@@ -105,7 +105,7 @@ airflow/dags/      # DAGs production-ready
 
 - **[Arquitetura](docs/architecture.md)** - Decisões técnicas e design
 - **[Modelo de Dados](docs/data-model.md)** - Estrutura das camadas Bronze/Silver/Gold
-- **[Diagramas](docs/architecture_diagram.md)** - Representações visuais do sistema
+- **[Decisões Arquiteturais](docs/decisions.md)** - ADRs (Architecture Decision Records)
 - **[Airflow](airflow/README.md)** - Configuração e uso
 
 ## Licença
