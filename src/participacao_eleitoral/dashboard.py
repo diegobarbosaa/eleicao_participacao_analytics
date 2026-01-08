@@ -10,7 +10,7 @@ Execução: streamlit run src/participacao_eleitoral/dashboard.py
 from __future__ import annotations
 
 from pathlib import Path
-from typing import cast, Dict, Any
+from typing import Any, cast
 
 import numpy as np
 import pandas as pd
@@ -174,13 +174,13 @@ def carregar_dados_reais(
 
 # Função para carregar geojson do Brasil
 @st.cache_data
-def carregar_geojson() -> Dict[str, Any] | None:
+def carregar_geojson() -> dict[str, Any] | None:
     """Carrega geojson dos estados brasileiros."""
     url = "https://raw.githubusercontent.com/codeforamerica/click_that_hood/master/public/data/brazil-states.geojson"
     try:
         response = requests.get(url, timeout=10)
         response.raise_for_status()
-        return cast(Dict[str, Any], response.json())
+        return cast(dict[str, Any], response.json())
     except requests.RequestException as e:
         import logging
 
