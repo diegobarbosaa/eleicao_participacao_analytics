@@ -24,20 +24,25 @@ Pipeline de dados pronto para produção para ingestão, transformação e orque
 - **Ruff** (linting) | **MyPy** (strict type checking)
 - **Schema-first design** | **Idempotência** | **Observabilidade**
 
+### Dashboard Interativo
+- **Streamlit** (interface web para visualização)
+- **Dados Silver layer** (taxas, mapas, comparações regionais)
+- **Suporte a múltiplos anos** (2014-2024)
+
 ## Arquitetura
 
 Implementa **Lakehouse pattern** com multi-camada:
 
 ```
 TSE (CSV) → Ingestão → Bronze (Parquet + DuckDB)
-                      → Silver (Enriquecido + Taxas + Regiões)
-                      → Gold (Planejado: Métricas Agregadas)
+                       → Silver (Enriquecido + Taxas + Regiões)
+                       → Gold (Futuro: Métricas Agregadas)
 ```
 
 **Camadas:**
 - **Bronze:** Landing zone com dados brutos estruturados
 - **Silver:** Dados limpos, enriquecidos (taxas de comparecimento/abstenção, UF→Região)
-- **Gold:** Métricas agregadas para BI dashboards
+- **Gold:** Futuro - métricas agregadas para BI dashboards
 
 ## Funcionalidades Principais
 
@@ -50,6 +55,8 @@ TSE (CSV) → Ingestão → Bronze (Parquet + DuckDB)
 ✅ **Metadados DuckDB:** Rastreabilidade completa de execuções (dataset, ano, status, linhas, duração, checksum)
 
 ✅ **CLI Completa:** Interface Typer para operações manuais (ingest, transform, config-show)
+
+✅ **Dashboard Interativo:** Visualização de dados Silver com Streamlit (mapas, gráficos, filtros por ano/região)
 
 ## Qualidade & Testes
 
@@ -104,9 +111,45 @@ airflow/dags/      # DAGs production-ready
 ## Documentação Técnica
 
 - **[Arquitetura](docs/architecture.md)** - Decisões técnicas e design
-- **[Modelo de Dados](docs/data-model.md)** - Estrutura das camadas Bronze/Silver/Gold
+- **[Modelo de Dados](docs/data-model.md)** - Estrutura das camadas Bronze/Silver
 - **[Decisões Arquiteturais](docs/decisions.md)** - ADRs (Architecture Decision Records)
 - **[Airflow](airflow/README.md)** - Configuração e uso
+
+## Contribuição
+
+Quer contribuir para o projeto? Siga estes passos:
+
+1. **Fork o repositório** e crie uma branch para sua feature/bugfix: `git checkout -b feature/nome-da-feature`
+
+2. **Desenvolva e teste**: Garanta que seus testes passam com `uv run pytest tests/unit/ --cov=src --cov-report=term-missing`
+
+3. **Lint e type check**: Execute `uv run ruff check src/` e `uv run python -m mypy -p participacao_eleitoral`
+
+4. **Commit com mensagem clara**: Use formato "feat/fix/refactor: descrição" (ex.: "feat: adicionar validação de schema")
+
+5. **Abra um PR**: Descreva as mudanças, impacto e como testar. Aguarde review.
+
+Para issues: Use templates no GitHub e forneça logs/detalhes para reproduzir bugs.
+
+## Solução de Problemas
+
+Problemas comuns e soluções:
+
+- **Erro de instalação**: `uv sync --verbose` para mais detalhes. Verifique Python 3.11+.
+
+- **Falha no download TSE**: Verifique conexão; TSE pode bloquear IPs. Tente novamente ou use VPN.
+
+- **Airflow não inicia**: No Windows, use Docker Desktop. Execute `astro dev start` em `airflow/`.
+
+- **Dados não processados**: Verifique logs com `uv run participacao-eleitoral config show` e veja metadados em DuckDB.
+
+- **Performance lenta**: Arquivos grandes? Use lazy evaluation (já implementado) ou aumente RAM.
+
+Para mais ajuda, consulte [Tutorial](docs/tutorial.md) ou abra uma issue.
+
+## Alerta de Desenvolvimento
+
+Manter `src/` e `airflow/src/` sincronizados manualmente para evitar divergências no código para container Airflow.
 
 ## Licença
 

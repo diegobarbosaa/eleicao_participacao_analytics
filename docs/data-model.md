@@ -2,6 +2,8 @@
 
 ## Camadas de Dados
 
+## Camadas de Dados
+
 ### Camada Bronze
 
 Os dados são armazenados em formato Parquet, organizados por dataset e ano, com particionamento eficiente para consultas analíticas.
@@ -183,3 +185,71 @@ Adicionalmente aos metadados técnicos nos arquivos Parquet, o sistema mantém:
 - Tempo de execução
 - Estatísticas de dados processados
 - Informações de erro em caso de falha
+
+## Consultas de Exemplo
+
+Use DuckDB para consultar dados analíticos diretamente dos arquivos Parquet.
+
+### Comparação Nacional (Silver)
+
+```sql
+SELECT
+    ano,
+    ROUND(AVG(taxa_comparecimento_pct), 2) as taxa_comparecimento_medio,
+    ROUND(AVG(taxa_abstencao_pct), 2) as taxa_abstencao_medio
+FROM read_parquet('data/silver/comparecimento_abstencao_silver/year=2022/data.parquet')
+GROUP BY ano
+ORDER BY ano DESC;
+```
+
+### Por Região (Silver)
+
+```sql
+SELECT
+    nome_regiao,
+    COUNT(*) as municipios,
+    ROUND(AVG(qt_comparecimento), 0) as comparecimento_medio,
+    ROUND(AVG(taxa_comparecimento_pct), 2) as taxa_comparecimento_pct
+FROM read_parquet('data/silver/comparecimento_abstencao_silver/year=2022/data.parquet')
+GROUP BY nome_regiao
+ORDER BY taxa_comparecimento_pct DESC;
+```
+
+### Top 10 Municípios por Comparecimento (Bronze)
+
+```sql
+SELECT
+    nm_municipio,
+    sg_uf,
+    qt_comparecimento,
+    qt_aptos
+FROM read_parquet('data/bronze/comparecimento_abstencao/year=2022/data.parquet')
+ORDER BY qt_comparecimento DESC
+LIMIT 10;
+```
+
+### Metadados de Transformação
+
+```sql
+SELECT * FROM read_parquet('data/silver/_metadata.duckdb');
+```
+
+**Nota:** Para múltiplos anos, use UNION ALL ou loops em scripts Python.
+
+## Comparação Bronze vs Silver
+
+| Aspecto | Camada Bronze | Camada Silver |
+|---------|---------------|---------------|
+| **Propósito** | Landing zone bruto | Dados enriquecidos para análise |
+| **Formato** | Parquet + metadados técnicos | Parquet + colunas calculadas |
+| **Colunas Técnicas** | `_metadata_*` (timestamp, checksum, etc.) | `_metadata_*` + enriquecidas |
+| **Dados Originais** | qt_comparecimento, qt_abstencao, qt_aptos | Mesmos + taxas calculadas |
+| **Enriquecimento** | Nenhum | taxa_comparecimento_pct, taxa_abstencao_pct, nome_regiao |
+| **Validação** | Schema físico vs contrato | Schema físico vs contrato + consistência |
+| **Tamanho** | Compacto (dados TSE) | Levemente maior (colunas extras) |
+| **Uso Típico** | Reprocessamento histórico | Dashboards, relatórios, BI |
+| **Performance** | Otimizado para ingestão | Otimizado para consultas analíticas |
+| **Idempotência** | Baseada em dataset+ano | Baseada em dataset+ano |
+| **Dependências** | Arquivos TSE | Bronze existente + transformações |
+
+**Escalabilidade:** Bronze suporta ~100k municípios/ano; Silver adiciona ~10-20% overhead para enriquecimento.

@@ -1,6 +1,6 @@
 # Tutorial: Como Executar o Projeto Eleição Participação Analytics
 
-Este mini-tutorial guia você passo a passo para executar o pipeline de dados **eleicao_participacao_analytics** no Windows. O projeto processa dados eleitorais do TSE usando arquitetura Lakehouse (camadas Bronze, Silver, Gold).
+Este tutorial guia você passo a passo para executar o pipeline de dados **eleicao_participacao_analytics** em Windows, macOS ou Linux. O projeto processa dados eleitorais do TSE usando arquitetura Lakehouse (camadas Bronze, Silver, Gold).
 
 ## Introdução
 
@@ -65,13 +65,58 @@ Para usar DAGs production-ready com retry, timeout e logging.
 3. **Acesse a interface web**: http://localhost:8080
    - Execute os DAGs: `participacao_eleitoral_ingest_bronze` e `participacao_eleitoral_transform_silver`.
 
-## Dicas Específicas para Windows
+## Dicas Específicas por Plataforma
 
-- **PATH**: Certifique-se de que Python e uv estão no PATH (reinicie o terminal após instalação).
+<details>
+<summary>Windows</summary>
+
+- **PATH**: Certifique-se de que Python e uv estão no PATH (reinicie o terminal/PowerShell após instalação).
 - **Firewall/Antivírus**: Pode bloquear downloads do TSE. Desative temporariamente se houver erros de conexão.
-- **Caminhos**: O projeto usa barras `/` (Unix-like). Se problemas, configure variáveis de ambiente ou use WSL.
-- **Astro no Windows**: Pode não ser 100% compatível. Use Docker Desktop para rodar containers do Airflow.
+- **Caminhos**: O projeto usa barras `/` (Unix-like). Se problemas, configure variáveis ou use WSL.
+- **Astro no Windows**: Pode não ser 100% compatível. Use Docker Desktop para containers Airflow.
 - **Performance**: Para grandes datasets, aumente RAM ou use SSD.
+
+</details>
+
+<details>
+<summary>macOS</summary>
+
+- **Homebrew**: Instale Python via `brew install python` para versão atualizada.
+- **PATH**: Adicione `/usr/local/bin` ao PATH se necessário.
+- **Permissões**: Use `sudo` se houver erros de permissão em `/usr/local/`.
+- **Astro**: Compatível; instale via `brew install astro` ou siga docs oficiais.
+- **Performance**: macOS é eficiente; monitore uso de disco para datasets grandes.
+
+</details>
+
+<details>
+<summary>Linux (Ubuntu/Debian)</summary>
+
+- **Pacotes**: Instale Python via `sudo apt update && sudo apt install python3 python3-pip`.
+- **uv**: Baixe diretamente ou use `pip install uv`.
+- **Firewall**: Verifique `ufw` se downloads falharem.
+- **Astro**: Compatível; use Docker se preferir isolamento.
+- **Performance**: Ótimo para processamento; use SSD para I/O rápido.
+
+</details>
+
+## Dashboard Interativo
+
+Para visualizar os dados processados de forma interativa:
+
+1. **Execute o Dashboard**:
+   ```
+   uv run streamlit run src/participacao_eleitoral/dashboard.py
+   ```
+   - Abre em http://localhost:8501
+   - Carrega dados da camada Silver
+
+2. **Funcionalidades**:
+   - Métricas nacionais (taxa de comparecimento, abstenções)
+   - Mapa interativo por estado
+   - Comparação regional
+   - Dados detalhados em tabelas
+   - Filtros por ano e região
 
 ## Exemplos de Saída Esperada
 
@@ -91,6 +136,3 @@ Após transformação:
 - **Logs**: Use `uv run participacao-eleitoral --help` para comandos disponíveis.
 
 Para mais detalhes, consulte [README.md](../README.md) ou [Arquitetura](architecture.md).
-
-Boa sorte com o processamento dos dados eleitorais!</content>
-<parameter name="filePath">docs/tutorial.md

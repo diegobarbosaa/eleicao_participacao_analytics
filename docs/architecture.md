@@ -73,6 +73,28 @@ com foco inicial na camada Bronze.
 
 ## Fluxo de Dados (Atualizado)
 
+### Diagrama Visual
+
+```mermaid
+graph TD
+    A[TSE CSV/ZIP] --> B[Downloader]
+    B --> C[Conversor]
+    C --> D[Camada Bronze Parquet]
+    D --> E[Validação Schema Bronze]
+    E --> F[BronzeToSilverTransformer]
+    F --> G[Validação Schema Silver]
+    G --> H[Camada Silver Parquet]
+    H --> I[SilverMetadataStore DuckDB]
+    I --> J[Pronto para Análises]
+
+    style A fill:#e1f5fe
+    style D fill:#fff3e0
+    style H fill:#e8f5e8
+    style J fill:#f3e5f5
+```
+
+### Fluxo Textual
+
 ```
 TSE (CSV/ZIP)
     ↓
@@ -94,6 +116,24 @@ SilverMetadataStore (DuckDB - rastreabilidade)
     ↓
 Pronto para consultas analíticas
 ```
+
+## Glossário
+
+- **Lakehouse Pattern**: Arquitetura que combina data lake (flexibilidade) com data warehouse (estrutura), usando Parquet/DuckDB para armazenamento analítico.
+
+- **Lazy Evaluation**: Técnica do Polars onde operações são adiadas até execução, otimizando performance e memória em grandes datasets.
+
+- **Idempotência**: Propriedade de operações que podem ser repetidas sem efeitos colaterais, garantindo segurança em reprocessamentos.
+
+- **Schema Físico**: Definição técnica dos tipos de dados (ex.: `pl.Float64`) usada pelo Polars para otimização.
+
+- **Contrato Lógico**: Definição de domínio dos campos obrigatórios (ex.: `ComparecimentoContrato`), independente da implementação.
+
+- **Medallion Architecture**: Modelo de camadas (Bronze→Silver→Gold) para evolução progressiva de dados brutos para analíticos.
+
+- **RegionMapper**: Componente que mapeia códigos UF para regiões geográficas brasileiras (Norte, Nordeste, etc.).
+
+- **MetadataStore**: Repositório de metadados usando DuckDB para rastrear execuções, checksums e status.
 
 ## Princípios de Consistência Bronze ↔ Silver
 
