@@ -94,16 +94,31 @@ def carregar_dados_reais(
     if not anos_selecionados:
         return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
 
-    # Baixar e extrair dados da GitHub Release
+    # Baixar e extrair dados da GitHub Release (apenas anos selecionados)
     url = "https://github.com/diegobarbosaa/eleicao_participacao_analytics/releases/download/v1.0.0-data/silver_data.7z"
     try:
+        print("Iniciando download do arquivo 7z...")
         response = requests.get(url)
         response.raise_for_status()
+        print(f"Download concluído, tamanho: {len(response.content)} bytes")
         with open("temp.7z", "wb") as f:
             f.write(response.content)
+        print("Extraindo apenas anos selecionados...")
         with py7zr.SevenZipFile("temp.7z", "r") as archive:
-            archive.extractall(TEMP_DATA_PATH)
+            # Extrair apenas os arquivos dos anos selecionados
+            all_files = archive.getnames()
+            files_to_extract = []
+            for ano in anos_selecionados:
+                pattern = f"silver/comparecimento_abstencao/year={ano}/data.parquet"
+                matching_files = [f for f in all_files if pattern in f]
+                files_to_extract.extend(matching_files)
+            if files_to_extract:
+                archive.extract(path=TEMP_DATA_PATH, targets=files_to_extract)
+                print(f"Extraídos {len(files_to_extract)} arquivos para anos: {anos_selecionados}")
+            else:
+                print("Nenhum arquivo encontrado para os anos selecionados")
     except Exception as e:
+        print(f"Erro ao baixar/extrair dados: {e}")
         import logging
 
         logger = logging.getLogger(__name__)
