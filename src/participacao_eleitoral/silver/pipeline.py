@@ -69,7 +69,7 @@ class SilverTransformationPipeline:
         inicio = datetime.now(UTC)
 
         dataset = Dataset(
-            nome="comparecimento_abstencao",
+            nome="comparecimento_abstencao_silver",
             ano=ano,
             url_origem=f"{self.settings.bronze_dir}/comparecimento_abstencao/year={ano}/data.parquet",
         )

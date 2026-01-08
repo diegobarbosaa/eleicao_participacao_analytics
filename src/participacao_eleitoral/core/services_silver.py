@@ -2,9 +2,10 @@
 
 from datetime import UTC, datetime
 
-from .contracts.ingestao_metadata import IngestaoMetadataDict
-from .entities import Dataset
-from .enums import StatusIngestao
+from participacao_eleitoral.core.contracts.ingestao_metadata import IngestaoMetadataDict
+from participacao_eleitoral.core.contracts.silver_metadata import SilverMetadataDict
+from participacao_eleitoral.core.entities import Dataset
+from participacao_eleitoral.core.enums import StatusIngestao
 
 
 def construir_metadata_silver_sucesso(
@@ -13,24 +14,23 @@ def construir_metadata_silver_sucesso(
     fim: datetime,
     linhas_antes: int,
     linhas_depois: int,
-) -> IngestaoMetadataDict:
+) -> SilverMetadataDict:
     """
     Cria metadata de sucesso da transformação silver.
 
     Linhas antes = quantidade antes de remover nulos
     Linhas depois = quantidade após transformação final
     """
-    return {
-        "dataset": dataset.nome,
-        "ano": dataset.ano,
-        "status": StatusIngestao.SUCESSO.value,
-        "inicio": inicio.astimezone(UTC).isoformat(),
-        "fim": fim.astimezone(UTC).isoformat(),
-        "duracao_segundos": (fim - inicio).total_seconds(),
-        "linhas_antes": linhas_antes,
-        "linhas_depois": linhas_depois,
-        "erro": None,
-    }
+    return SilverMetadataDict(
+        dataset=dataset.nome,
+        ano=dataset.ano,
+        status=StatusIngestao.SUCESSO.value,
+        inicio=inicio.astimezone(UTC).isoformat(),
+        fim=fim.astimezone(UTC).isoformat(),
+        duracao_segundos=(fim - inicio).total_seconds(),
+        linhas_antes=linhas_antes,
+        linhas_depois=linhas_depois,
+    )
 
 
 def construir_metadata_silver_falha(
@@ -40,14 +40,15 @@ def construir_metadata_silver_falha(
     erro: str,
 ) -> IngestaoMetadataDict:
     """Cria metadata de falha da transformação silver."""
-    return {
-        "dataset": dataset.nome,
-        "ano": dataset.ano,
-        "status": StatusIngestao.FALHA.value,
-        "inicio": inicio.astimezone(UTC).isoformat(),
-        "fim": fim.astimezone(UTC).isoformat(),
-        "duracao_segundos": (fim - inicio).total_seconds(),
-        "linhas_antes": 0,
-        "linhas_depois": 0,
-        "erro": erro,
-    }
+    return IngestaoMetadataDict(
+        dataset=dataset.nome,
+        ano=dataset.ano,
+        status=StatusIngestao.FALHA.value,
+        inicio=inicio.astimezone(UTC).isoformat(),
+        fim=fim.astimezone(UTC).isoformat(),
+        duracao_segundos=(fim - inicio).total_seconds(),
+        linhas=0,
+        tamanho_bytes=0,
+        checksum="",
+        erro=erro,
+    )

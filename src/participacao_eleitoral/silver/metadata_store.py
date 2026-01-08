@@ -161,7 +161,6 @@ class SilverMetadataStore:
         exc_type: type[BaseException] | None,
         exc_val: BaseException | None,
         exc_tb: object,
-    ) -> bool:
+    ) -> None:
         """Fecha conexão ao sair do contexto."""
         self.close()
-        return False  # Não suprimir exceções

@@ -1,8 +1,22 @@
-```md
 # Registros de Decisão Arquitetural (ADR)
 
 Este documento registra decisões arquiteturais relevantes tomadas ao longo
 do desenvolvimento do projeto.
+
+## Índice
+
+- [ADR-001 – Arquitetura Lakehouse](#adr-001--arquitetura-lakehouse)
+- [ADR-002 – Pipeline Idempotente](#adr-002--pipeline-idempotente)
+- [ADR-003 – Uso de Parquet como formato analítico](#adr-003--uso-de-parquet-como-formato-analítico)
+- [ADR-004 – Falhar cedo em quebra de schema](#adr-004--falhar-cedo-em-quebra-de-schema)
+- [ADR-005 – Não realizar previsões eleitorais](#adr-005--não-realizar-previsões-eleitorais)
+- [ADR-006 – Dados públicos apenas](#adr-006--dados-públicos-apenas)
+- [ADR-007 – Centralização de logging em módulo utilitário](#adr-007--centralização-de-logging-em-módulo-utilitário)
+- [ADR-008 – Uso de Polars e DuckDB no Lakehouse](#adr-008--uso-de-polars-e-duckdb-no-lakehouse)
+- [ADR-009 – Uso de Airflow com Astronomer e Docker](#adr-009--uso-de-airflow-com-astronomer-e-docker)
+- [ADR-010 – Implementação de Camada Silver](#adr-010--implementação-de-camadas-silver)
+- [ADR-011 – Consistência Bronze ↔ Silver](#adr-011--consistência-bronze--silver)
+- [ADR-012 – Configuração de sys.path para Imports no Airflow](#adr-012--configuração-de-syspath-para-imports-no-airflow)
 
 ---
 
@@ -423,4 +437,3 @@ RUN pip install -e /app/  # Instala o pacote em modo desenvolvimento
 
 **Decisão Final:**
 Apesar de `sys.path` não ser idiomático, é a melhor solução para Airflow com projetos monorepo. A configuração centralizada em `_shared.py` reduz complexidade e funciona consistentemente em todos os ambientes.
-```

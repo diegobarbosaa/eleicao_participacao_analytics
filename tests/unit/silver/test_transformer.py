@@ -188,7 +188,7 @@ def test_transformer_mantera_colunas_originais(tmp_path, logger) -> None:  # typ
     # Criar silver
     silver_path = tmp_path / "silver.parquet"
     transformer = BronzeToSilverTransformer(logger=logger)
-    result = transformer.transform(
+    _ = transformer.transform(
         bronze_parquet_path=bronze_path,
         silver_parquet_path=silver_path,
         region_mapper=RegionMapper(),

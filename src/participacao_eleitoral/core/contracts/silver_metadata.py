@@ -1,13 +1,13 @@
 from typing import TypedDict
 
 
-class IngestaoMetadataDict(TypedDict, total=False):
+class SilverMetadataDict(TypedDict, total=False):
     """
-    Contrato LÓGICO de metadados de ingestão.
+    Contrato LÓGICO de metadados da camada Silver.
 
     Usado por:
-    - core.services
-    - metadata_store
+    - core.services_silver
+    - silver.metadata_store
     - Airflow
     """
 
@@ -17,9 +17,6 @@ class IngestaoMetadataDict(TypedDict, total=False):
     inicio: str
     fim: str
     duracao_segundos: float
-    linhas: int
-    tamanho_bytes: int
-    checksum: str
-    erro: str | None
     linhas_antes: int
     linhas_depois: int
+    erro: str | None

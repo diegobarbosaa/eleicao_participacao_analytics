@@ -19,10 +19,6 @@ def test_pipeline_com_dados_reais_tse(tmp_path, settings, logger) -> None:  # ty
     - Pode levar vários minutos
     - Depende de disponibilidade do servidor do TSE
     """
-    # Ajustar settings para diretório temporário
-    settings.bronze_dir = tmp_path / "bronze"
-    settings.bronze_dir.mkdir(parents=True, exist_ok=True)
-
     # Criar pipeline
     pipeline = IngestionPipeline(
         settings=settings,
@@ -75,10 +71,6 @@ def test_pipeline_idempotencia_com_dados_reais(tmp_path, settings, logger) -> No
     """
     Pipeline deve ser idempotente mesmo com dados reais.
     """
-    # Ajustar settings
-    settings.bronze_dir = tmp_path / "bronze"
-    settings.bronze_dir.mkdir(parents=True, exist_ok=True)
-
     # Criar pipeline
     pipeline = IngestionPipeline(
         settings=settings,
@@ -109,10 +101,6 @@ def test_pipeline_verifica_detalhes_municipios(tmp_path, settings, logger) -> No
     """
     Verificar se dados dos municípios são corretos (validação de negócio).
     """
-    # Ajustar settings
-    settings.bronze_dir = tmp_path / "bronze"
-    settings.bronze_dir.mkdir(parents=True, exist_ok=True)
-
     # Criar pipeline
     pipeline = IngestionPipeline(
         settings=settings,

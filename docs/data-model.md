@@ -1,58 +1,10 @@
 # Modelo de Dados
 
-## Camada Bronze
-
-Os dados são armazenados em formato Parquet, organizados por dataset e ano, com particionamento eficiente para consultas analíticas.
-
-### Estrutura de Diretórios
-
-```
-data/
-└── bronze/
-    └── comparecimento_abstencao/
-        ├── year=2014/
-        │   └── data.parquet
-        ├── year=2016/
-        │   └── data.parquet
-        ├── year=2018/
-        │   └── data.parquet
-        ├── year=2020/
-        │   └── data.parquet
-        ├── year=2022/
-        │   └── data.parquet
-        └── year=2024/
-            └── data.parquet
-```
-
-### Estrutura de Particionamento
-
-- **Dataset**: Tipo de dado (ex: comparecimento_abstencao)
-- **Ano**: Ano da eleição (year=2024)
-- **Arquivo**: Dados em formato Parquet otimizado
-
-## Esquema de Dados Bronze
-
-### Colunas Técnicas (Metadados)
-
-Cada arquivo Parquet contém colunas técnicas adicionais para rastreabilidade:
-
-- `_metadata_ingestion_timestamp`: Timestamp da ingestão
-- `_metadata_source`: Origem dos dados (URL do TSE)
-- `_metadata_file_size`: Tamanho do arquivo original
-- `_metadata_checksum`: Checksum para verificação de integridade
-- `_metadata_processing_date`: Data de processamento
-
-### Schema de Dados (Comparecimento/Abstenção)
-
-O schema exato pode ser consultado via CLI:
-
-```bash
-uv run participacao-eleitoral validate schema comparecimento
-```
+## Camadas de Dados
 
 ## Camadas de Dados
 
-### Camada Bronze (Implementada ✅)
+### Camada Bronze
 
 Os dados são armazenados em formato Parquet, organizados por dataset e ano, com particionamento eficiente para consultas analíticas.
 
@@ -90,6 +42,9 @@ Cada arquivo Parquet contém colunas técnicas adicionais para rastreabilidade:
 
 - `_metadata_ingestion_timestamp`: Timestamp da ingestão
 - `_metadata_source`: Origem dos dados (URL do TSE)
+- `_metadata_file_size`: Tamanho do arquivo original
+- `_metadata_checksum`: Checksum para verificação de integridade
+- `_metadata_processing_date`: Data de processamento
 
 ##### Schema de Dados (Comparecimento/Abstenção)
 
@@ -99,7 +54,7 @@ O schema exato pode ser consultado via CLI:
 uv run participacao-eleitoral validate schema comparecimento
 ```
 
-### Camada Silver (Implementada ✅)
+### Camada Silver (Implementada)
 
 Dados transformados e enriquecidos para análise de participação eleitoral.
 
@@ -123,6 +78,12 @@ data/
             └── data.parquet
 ```
 
+#### Estrutura de Particionamento
+
+- **Dataset**: Tipo de dado (ex: comparecimento_abstencao_silver)
+- **Ano**: Ano da eleição (year=2024)
+- **Arquivo**: Dados em formato Parquet otimizado
+
 #### Enriquecimento de Dados
 
 ##### Taxas Calculadas
@@ -139,9 +100,9 @@ data/
 - Remoção de linhas com valores nulos
 - Consistência de dados (comparecimento + abstenção = aptos)
 
-### Lógica de Cálculo das Taxas
+#### Lógica de Cálculo das Taxas
 
-#### Taxa de Comparecimento
+###### Taxa de Comparecimento
 
 ```
 TAXA_COMPARECIMENTO_PCT = (QT_COMPARECIMENTO / QT_APTOS) * 100
@@ -152,7 +113,7 @@ Exemplo:
 - Taxa: (80/100) * 100 = 80%
 ```
 
-#### Taxa de Abstenção
+###### Taxa de Abstenção
 
 ```
 TAXA_ABSTENCAO_PCT = (QT_ABSTENCAO / QT_APTOS) * 100
@@ -161,37 +122,12 @@ Exemplo:
 - Aptos: 100
 - Absteram: 20
 - Taxa: (20/100) * 100 = 20%
-
-Consistência: QT_COMPARECIMENTO + QT_ABSTENCAO = QT_APTOS (em 100% dos casos)
 ```
 
-### Mapeamento Geográfico
+###### Consistência
 
-A transformação adiciona a coluna `NOME_REGIAO` baseada na coluna `SG_UF`:
-
-| Região | UFs |
-|--------|-----|
-| **Norte** | AC, AP, AM, PA, RO, RR, TO |
-| **Nordeste** | AL, BA, CE, MA, PB, PE, PI, RN, SE |
-| **Centro-Oeste** | DF, GO, MT, MS |
-| **Sudeste** | ES, MG, RJ, SP |
-| **Sul** | PR, RS, SC |
-
-**Classe Implementada:** `RegionMapper` em `src/participacao_eleitoral/silver/region_mapper.py`
-
-### Validação de Qualidade
-
-#### Remoção de Nulos
 ```
-df = df.drop_nulls()
-
-Impacto:
-- Linhas_antes: quantidade antes da remoção
-- Linhas_depois: quantidade após transformação
-- Linhas_removidas = Linhas_antes - Linhas_depois
-
-Logging:
-- Se linhas_removidas > 0, loga warning com percentual
+QT_COMPARECIMENTO + QT_ABSTENCAO = QT_APTOS (em 100% dos casos)
 ```
 
 #### Validação de Schema
@@ -202,8 +138,7 @@ Logging:
 
 **Contrato Lógico:** `ComparecimentoSilverContrato` define campos obrigatórios
 - Separa domínio de implementação física
-
-**Validação:** `validar_schema_silver_contra_contrato()` garante que schema físico atende contrato
+- Validação garante que schema físico atende contrato
 - Falha cedo se campo obrigatório está faltando
 - Protege contra mudanças silenciosas no CSV
 
@@ -226,24 +161,95 @@ Armazenados em `silver/_metadata.duckdb`:
 - UPSERT evita duplicatas
 - Se arquivo já existe + status="sucesso", faz skip
 
-## Formato Parquet
+### Formato Parquet
 
-### Benefícios
+#### Benefícios
+
 - Compressão eficiente
 - Colunas otimizadas para leitura analítica
 - Compatibilidade com múltiplas ferramentas
 - Suporte a particionamento
 
-### Estratégias de Otimização
+#### Estratégias de Otimização
+
 - Particionamento por ano para consultas eficientes
 - Compressão ZSTD nível 3 para equilíbrio entre tamanho e performance
 - Estatísticas de colunas para otimização de consultas
 
-## Metadados de Execução
+### Metadados de Execução
 
 Adicionalmente aos metadados técnicos nos arquivos Parquet, o sistema mantém:
+
 - Histórico de execuções
 - Status de processamento
 - Tempo de execução
 - Estatísticas de dados processados
 - Informações de erro em caso de falha
+
+## Consultas de Exemplo
+
+Use DuckDB para consultar dados analíticos diretamente dos arquivos Parquet.
+
+### Comparação Nacional (Silver)
+
+```sql
+SELECT
+    ano,
+    ROUND(AVG(taxa_comparecimento_pct), 2) as taxa_comparecimento_medio,
+    ROUND(AVG(taxa_abstencao_pct), 2) as taxa_abstencao_medio
+FROM read_parquet('data/silver/comparecimento_abstencao_silver/year=2022/data.parquet')
+GROUP BY ano
+ORDER BY ano DESC;
+```
+
+### Por Região (Silver)
+
+```sql
+SELECT
+    nome_regiao,
+    COUNT(*) as municipios,
+    ROUND(AVG(qt_comparecimento), 0) as comparecimento_medio,
+    ROUND(AVG(taxa_comparecimento_pct), 2) as taxa_comparecimento_pct
+FROM read_parquet('data/silver/comparecimento_abstencao_silver/year=2022/data.parquet')
+GROUP BY nome_regiao
+ORDER BY taxa_comparecimento_pct DESC;
+```
+
+### Top 10 Municípios por Comparecimento (Bronze)
+
+```sql
+SELECT
+    nm_municipio,
+    sg_uf,
+    qt_comparecimento,
+    qt_aptos
+FROM read_parquet('data/bronze/comparecimento_abstencao/year=2022/data.parquet')
+ORDER BY qt_comparecimento DESC
+LIMIT 10;
+```
+
+### Metadados de Transformação
+
+```sql
+SELECT * FROM read_parquet('data/silver/_metadata.duckdb');
+```
+
+**Nota:** Para múltiplos anos, use UNION ALL ou loops em scripts Python.
+
+## Comparação Bronze vs Silver
+
+| Aspecto | Camada Bronze | Camada Silver |
+|---------|---------------|---------------|
+| **Propósito** | Landing zone bruto | Dados enriquecidos para análise |
+| **Formato** | Parquet + metadados técnicos | Parquet + colunas calculadas |
+| **Colunas Técnicas** | `_metadata_*` (timestamp, checksum, etc.) | `_metadata_*` + enriquecidas |
+| **Dados Originais** | qt_comparecimento, qt_abstencao, qt_aptos | Mesmos + taxas calculadas |
+| **Enriquecimento** | Nenhum | taxa_comparecimento_pct, taxa_abstencao_pct, nome_regiao |
+| **Validação** | Schema físico vs contrato | Schema físico vs contrato + consistência |
+| **Tamanho** | Compacto (dados TSE) | Levemente maior (colunas extras) |
+| **Uso Típico** | Reprocessamento histórico | Dashboards, relatórios, BI |
+| **Performance** | Otimizado para ingestão | Otimizado para consultas analíticas |
+| **Idempotência** | Baseada em dataset+ano | Baseada em dataset+ano |
+| **Dependências** | Arquivos TSE | Bronze existente + transformações |
+
+**Escalabilidade:** Bronze suporta ~100k municípios/ano; Silver adiciona ~10-20% overhead para enriquecimento.

@@ -32,6 +32,7 @@ class RegionMapper:
         "MG": "Sudeste",
         "RJ": "Sudeste",
         "SP": "Sudeste",
+        "ZZ": "Exterior",
     }
 
     @classmethod
@@ -43,6 +44,6 @@ class RegionMapper:
             uf: Sigla da unidade federativa
 
         Returns:
-            Nome da região geográfica ou "Desconhecido"
+            Nome da região geográfica ("Exterior" para ZZ ou "Desconhecido" para outros inválidos)
         """
         return cls.REGIAO_MAP.get(uf, "Desconhecido")

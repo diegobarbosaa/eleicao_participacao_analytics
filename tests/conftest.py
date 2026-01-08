@@ -16,22 +16,15 @@ def settings(tmp_path: Path) -> Settings:
     - nenhum dado real sendo sobrescrito
     """
 
-    settings = Settings()
+    # Criar diretórios temporários manualmente
+    (tmp_path / "data").mkdir(parents=True, exist_ok=True)
+    (tmp_path / "data" / "bronze").mkdir(parents=True, exist_ok=True)
+    (tmp_path / "data" / "silver").mkdir(parents=True, exist_ok=True)
+    (tmp_path / "data" / "gold").mkdir(parents=True, exist_ok=True)
+    (tmp_path / "logs").mkdir(parents=True, exist_ok=True)
 
-    # Redireciona paths para ambiente temporário
-    settings.data_dir = tmp_path / "data"
-    settings.bronze_dir = settings.data_dir / "bronze"
-    settings.silver_dir = settings.data_dir / "silver"
-    settings.gold_dir = settings.data_dir / "gold"
-    settings.logs_dir = tmp_path / "logs"
+    return Settings(project_root=tmp_path)
 
-    # Garante que os diretórios existam
-    settings.bronze_dir.mkdir(parents=True, exist_ok=True)
-    settings.silver_dir.mkdir(parents=True, exist_ok=True)
-    settings.gold_dir.mkdir(parents=True, exist_ok=True)
-    settings.logs_dir.mkdir(parents=True, exist_ok=True)
-
-    return settings
 
 @pytest.fixture
 def logger() -> ModernLogger:

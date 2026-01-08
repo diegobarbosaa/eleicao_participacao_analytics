@@ -1,6 +1,5 @@
 """Testes do SilverMetadataStore"""
 
-import pytest
 
 from participacao_eleitoral.config import Settings
 from participacao_eleitoral.silver.metadata_store import SilverMetadataStore
@@ -11,7 +10,6 @@ def test_silver_metadata_store_cria_tabela(tmp_path, logger):
     db_path = tmp_path / "test_silver.duckdb"
 
     settings = Settings()
-    settings.silver_dir = tmp_path
 
     store = SilverMetadataStore(settings=settings, logger=logger, db_path=db_path)
 
@@ -25,7 +23,6 @@ def test_silver_metadata_store_salvar_e_buscar(tmp_path, logger):
     db_path = tmp_path / "test_silver.duckdb"
 
     settings = Settings()
-    settings.silver_dir = tmp_path
 
     store = SilverMetadataStore(settings=settings, logger=logger, db_path=db_path)
 
@@ -56,7 +53,6 @@ def test_silver_metadata_store_upsert_idempotencia(tmp_path, logger):
     db_path = tmp_path / "test_silver.duckdb"
 
     settings = Settings()
-    settings.silver_dir = tmp_path
 
     store = SilverMetadataStore(settings=settings, logger=logger, db_path=db_path)
 
@@ -103,7 +99,6 @@ def test_silver_metadata_store_listar_todos(tmp_path, logger):
     db_path = tmp_path / "test_silver.duckdb"
 
     settings = Settings()
-    settings.silver_dir = tmp_path
 
     store = SilverMetadataStore(settings=settings, logger=logger, db_path=db_path)
 
@@ -136,7 +131,6 @@ def test_silver_metadata_store_buscar_inexistente(tmp_path, logger):
     db_path = tmp_path / "test_silver.duckdb"
 
     settings = Settings()
-    settings.silver_dir = tmp_path
 
     store = SilverMetadataStore(settings=settings, logger=logger, db_path=db_path)
 
@@ -149,7 +143,6 @@ def test_silver_metadata_store_falha(tmp_path, logger):
     db_path = tmp_path / "test_silver.duckdb"
 
     settings = Settings()
-    settings.silver_dir = tmp_path
 
     store = SilverMetadataStore(settings=settings, logger=logger, db_path=db_path)
 

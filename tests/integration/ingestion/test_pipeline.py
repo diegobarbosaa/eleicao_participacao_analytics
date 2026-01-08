@@ -6,9 +6,6 @@ def test_pipeline_fluxo_completo(tmp_path, settings, logger, monkeypatch) -> Non
     Pipeline deve executar fluxo completo sem erro.
     """
 
-    # Ajusta bronze_dir para ambiente de teste
-    settings.bronze_dir = tmp_path / "bronze"
-
     pipeline = IngestionPipeline(
         settings=settings,
         logger=logger,

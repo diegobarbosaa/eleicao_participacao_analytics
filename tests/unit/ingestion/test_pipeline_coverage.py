@@ -12,7 +12,6 @@ def test_pipeline_verifica_idempotencia(tmp_path, settings, logger, monkeypatch)
     Pipeline deve verificar se ingestão já foi feita e pular.
     """
     # Configurar ambiente
-    settings.bronze_dir = tmp_path / "bronze"
     settings.bronze_dir.mkdir(parents=True, exist_ok=True)
 
     # Criar pipeline
@@ -67,7 +66,6 @@ def test_pipeline_cria_diretorios_se_nao_existem(tmp_path, settings, logger, mon
     Pipeline deve criar diretórios necessários.
     """
     # Configurar com diretórios que não existem
-    settings.bronze_dir = tmp_path / "data" / "bronze"
 
     pipeline = IngestionPipeline(
         settings=settings,
@@ -106,7 +104,6 @@ def test_pipeline_remove_csv_temporario(tmp_path, settings, logger, monkeypatch)
     """
     Pipeline deve remover CSV temporário após conversão.
     """
-    settings.bronze_dir = tmp_path / "bronze"
     settings.bronze_dir.mkdir(parents=True, exist_ok=True)
 
     pipeline = IngestionPipeline(
@@ -151,7 +148,6 @@ def test_pipeline_salva_metadata_sucesso(tmp_path, settings, logger, monkeypatch
     """
     Pipeline deve salvar metadata de execução bem-sucedida.
     """
-    settings.bronze_dir = tmp_path / "bronze"
     settings.bronze_dir.mkdir(parents=True, exist_ok=True)
 
     pipeline = IngestionPipeline(
@@ -200,7 +196,6 @@ def test_pipeline_salva_metadata_falha(tmp_path, settings, logger, monkeypatch) 
     """
     Pipeline deve salvar metadata de execução com falha.
     """
-    settings.bronze_dir = tmp_path / "bronze"
     settings.bronze_dir.mkdir(parents=True, exist_ok=True)
 
     pipeline = IngestionPipeline(
