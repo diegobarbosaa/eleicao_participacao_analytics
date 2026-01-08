@@ -253,10 +253,16 @@ regiao_selecionada = st.sidebar.multiselect(
 )
 
 # Carregar dados
-data = carregar_dados_reais(Anos_selecionados)
-df_nacional = data[0]
-df_regional = data[1]
-df_mapa = data[2]
+try:
+    data = carregar_dados_reais(Anos_selecionados)
+    df_nacional = data[0]
+    df_regional = data[1]
+    df_mapa = data[2]
+except Exception as e:
+    st.error(f"Erro ao carregar dados: {e}. Usando dados vazios para demo.")
+    df_nacional = pd.DataFrame()
+    df_regional = pd.DataFrame()
+    df_mapa = pd.DataFrame()
 geojson = carregar_geojson()
 
 # Renomear colunas para nomes consistentes
