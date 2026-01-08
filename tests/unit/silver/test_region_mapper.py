@@ -46,7 +46,7 @@ def test_region_mapper_uf_desconhecida():
     mapper = RegionMapper()
 
     assert mapper.get_regiao("XX") == "Desconhecido"
-    assert mapper.get_regiao("ZZ") == "Desconhecido"
+    assert mapper.get_regiao("ZZ") == "Exterior"
     assert mapper.get_regiao("") == "Desconhecido"
     assert mapper.get_regiao("ABC") == "Desconhecido"
 
@@ -64,11 +64,11 @@ def test_region_mapper_case_sensitive():
 
 
 def test_region_mapper_mapeamento_completo():
-    """RegionMapper deve ter todas as 27 UFs brasileiras."""
+    """RegionMapper deve ter todas as 27 UFs brasileiras + Exterior."""
     mapper = RegionMapper()
 
     total_ufs = len(mapper.REGIAO_MAP)
-    assert total_ufs == 27  # Brasil tem 26 estados + 1 DF
+    assert total_ufs == 28  # Brasil tem 26 estados + 1 DF + 1 Exterior
 
     # Verificar se não há duplicatas
     assert len(set(mapper.REGIAO_MAP.keys())) == total_ufs
