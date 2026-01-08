@@ -16,6 +16,7 @@ import numpy as np
 import pandas as pd
 import plotly.express as px  # type: ignore
 import polars as pl
+import py7zr
 import requests
 import streamlit as st
 
@@ -35,6 +36,9 @@ st.markdown("<style>html {scroll-behavior: smooth;}</style>", unsafe_allow_html=
 # Define project root para resolver caminho correto dos dados
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 DATA_PATH = PROJECT_ROOT / "data" / "silver" / "comparecimento_abstencao"
+
+# Pasta temp para dados extraídos
+TEMP_DATA_PATH = PROJECT_ROOT / "temp_data"
 
 # Mapeamento de UF para nome completo
 UF_NOME_MAP = {
@@ -90,12 +94,29 @@ def carregar_dados_reais(
     if not anos_selecionados:
         return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
 
-    # Verificar se arquivos existem
+    # Baixar e extrair dados da GitHub Release
+    url = "https://github.com/diegobarbosaa/eleicao_participacao_analytics/releases/download/v1.0.0-data/silver_data.7z"
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+        with open("temp.7z", "wb") as f:
+            f.write(response.content)
+        with py7zr.SevenZipFile("temp.7z", "r") as archive:
+            archive.extractall(TEMP_DATA_PATH)
+    except Exception as e:
+        import logging
+
+        logger = logging.getLogger(__name__)
+        logger.error(f"Erro ao baixar/extrair dados: {e}")
+        return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
+
+    # Verificar se arquivos existem na pasta extraída
     paths = []
     for ano in anos_selecionados:
-        caminho = DATA_PATH / f"year={ano}" / "data.parquet"
+        caminho = (
+            TEMP_DATA_PATH / "silver" / "comparecimento_abstencao" / f"year={ano}" / "data.parquet"
+        )
         if not caminho.exists():
-            # Log error instead of st.error in cached function
             import logging
 
             logger = logging.getLogger(__name__)
