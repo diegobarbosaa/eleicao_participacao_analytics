@@ -7,11 +7,14 @@ do TSE, focado na taxa de comparecimento. Usa dados reais da camada Silver.
 Execução: streamlit run src/participacao_eleitoral/dashboard.py
 """
 
+from __future__ import annotations
+
 from pathlib import Path
+from typing import cast, Dict, Any
 
 import numpy as np
 import pandas as pd
-import plotly.express as px
+import plotly.express as px  # type: ignore
 import polars as pl
 import requests
 import streamlit as st
@@ -171,13 +174,13 @@ def carregar_dados_reais(
 
 # Função para carregar geojson do Brasil
 @st.cache_data
-def carregar_geojson() -> dict | None:
+def carregar_geojson() -> Dict[str, Any] | None:
     """Carrega geojson dos estados brasileiros."""
     url = "https://raw.githubusercontent.com/codeforamerica/click_that_hood/master/public/data/brazil-states.geojson"
     try:
         response = requests.get(url, timeout=10)
         response.raise_for_status()
-        return response.json()
+        return cast(Dict[str, Any], response.json())
     except requests.RequestException as e:
         import logging
 
@@ -214,7 +217,10 @@ regiao_selecionada = st.sidebar.multiselect(
 )
 
 # Carregar dados
-df_nacional, df_regional, df_mapa = carregar_dados_reais(Anos_selecionados)
+data = carregar_dados_reais(Anos_selecionados)
+df_nacional = data[0]
+df_regional = data[1]
+df_mapa = data[2]
 geojson = carregar_geojson()
 
 # Renomear colunas para nomes consistentes
