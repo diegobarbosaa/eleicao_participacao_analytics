@@ -58,6 +58,28 @@ TSE (CSV) → Ingestão → Bronze (Parquet + DuckDB)
 
 ✅ **Dashboard Interativo:** Visualização de dados Silver com Streamlit (mapas, gráficos, filtros por ano/região)
 
+## Deploy na Cloud (Render Free Tier)
+
+**Interface Airflow Read-Only + Dashboard:** Deploy gratuito para demonstração (sem execução de pipelines).
+
+### Pré-requisitos
+- Conta no [Render](https://render.com) (gratuita)
+- Repo GitHub público
+
+### Passos
+1. **Conecte GitHub ao Render** e selecione este repo
+2. **Crie Web Services:**
+   - **Dashboard:** Dockerfile.dashboard, porta 8501
+   - **Airflow UI:** Dockerfile.airflow, porta 8080, env vars: `AIRFLOW__CORE__EXECUTOR=None`
+3. **Deploy:** Render gera URLs públicas automáticas
+
+**Links de Demo:** (Disponíveis após deploy público)
+
+- Dashboard: [https://dashboard-eleicao.onrender.com](https://dashboard-eleicao.onrender.com)
+- Airflow UI: [https://airflow-eleicao.onrender.com](https://airflow-eleicao.onrender.com)
+
+**Notas:** Free tier dorme após inatividade; pipelines rodam localmente via `uv run`.
+
 ## Qualidade & Testes
 
 - **98% coverage** com 98 testes unitários (threshold CI: 80%)
