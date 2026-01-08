@@ -35,6 +35,7 @@ def construir_metadata_sucesso(
         "erro": None,
     }
 
+
 def construir_metadata_falha(
     dataset: Dataset,
     inicio: datetime,

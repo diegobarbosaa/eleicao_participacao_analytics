@@ -6,9 +6,7 @@ class TSEDatasetURLs:
 
     BASE_URL = "https://cdn.tse.jus.br/estatistica/sead/odsele"
 
-    ANOS_DISPONIVEIS = [
-        2024, 2022, 2020, 2018, 2016, 2014
-    ]
+    ANOS_DISPONIVEIS = [2024, 2022, 2020, 2018, 2016, 2014]
 
     @classmethod
     def get_comparecimento_url(cls, ano: int) -> str:
