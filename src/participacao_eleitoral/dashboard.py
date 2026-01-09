@@ -7,8 +7,6 @@ do TSE, focado na taxa de comparecimento. Usa dados reais da camada Silver.
 Execução: streamlit run src/participacao_eleitoral/dashboard.py
 """
 
-print("Iniciando imports...")
-
 from __future__ import annotations
 
 from pathlib import Path
