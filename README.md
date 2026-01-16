@@ -58,9 +58,31 @@ TSE (CSV) → Ingestão → Bronze (Parquet + DuckDB)
 
 ✅ **Dashboard Interativo:** Visualização de dados Silver com Streamlit (mapas, gráficos, filtros por ano/região)
 
+## Deploy na Cloud (Render Free Tier + GitHub Container Registry)
+
+**Interface Airflow Read-Only + Dashboard:** Deploy gratuito para demonstração (usa dados mockados incluídos).
+
+### Pré-requisitos
+- Conta no [Render](https://render.com) (gratuita)
+- Repo GitHub público
+
+### Passos
+1. **Conecte GitHub ao Render** e selecione este repo
+2. **Crie Web Service:**
+    - **Dashboard:** Use imagem `ghcr.io/diegobarbosaa/eleicao_participacao_analytics/dashboard:latest`, porta 8501, env vars: `RENDER=true`
+3. **Deploy:** Render gera URL pública automática
+
+**Link de Demo:** (Disponível após deploy público)
+
+- Dashboard: [https://dashboard-eleicao.onrender.com](https://dashboard-eleicao.onrender.com)
+
+**Nota:** Airflow fica local (use `cd airflow && astro dev start` para testes).
+
+**Notas:** Free tier dorme após inatividade; dados mockados (~KB) incluídos para demo sem downloads.
+
 ## Qualidade & Testes
 
-- **98% coverage** com 98 testes unitários (threshold CI: 80%)
+- **89% coverage** com 98 testes unitários (threshold CI: 80%)
 - **CI/CD automatizado:** linting + type checking + testes em cada push/PR
 - **Schema validation:** Pydantic contracts para garantir qualidade de dados
 - **Idempotência:** Execuções seguras mesmo em caso de falha (UPSERT por dataset+ano)
@@ -73,9 +95,16 @@ git clone https://github.com/diegobarbosaa/eleicao_participacao_analytics
 cd eleicao_participacao_analytics
 uv sync
 
-# Ingestão + transformação Bronze→Silver
+# Ingestão + transformação Bronze→Silver (opcional para dados reais)
 uv run participacao-eleitoral data ingest 2014
 uv run participacao-eleitoral data transform 2014
+
+# Ou gerar mocks para demo rápida
+python scripts/generate_mocks.py
+
+# Testar dashboard
+streamlit run src/participacao_eleitoral/dashboard.py  # Com dados reais
+scripts/test/run_dashboard_mock.bat  # Com mocks (simula Render)
 ```
 
 ## Orquestração Airflow

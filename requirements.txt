@@ -1,0 +1,7 @@
+-e .
+streamlit>=1.52.2
+plotly>=6.5.1
+pandas
+polars>=1.17.0
+pyarrow>=22.0.0
+py7zr>=0.20.0

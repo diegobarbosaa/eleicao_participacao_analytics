@@ -29,9 +29,6 @@ def test_cli_data_help() -> None:
     assert "list-years" in result.stdout
 
 
-# Teste removido pois a opção de recursos experimentais testada era código morto não usado
-
-
 def test_cli_utils_version() -> None:
     """Testa comando utils version."""
     result = subprocess.run(
@@ -42,9 +39,6 @@ def test_cli_utils_version() -> None:
 
     assert result.returncode == 0
     assert "v1.0.0" in result.stdout
-
-
-# Teste removido pois a exibição de recursos experimentais testada era código morto não usado
 
 
 def test_cli_data_list_years() -> None:

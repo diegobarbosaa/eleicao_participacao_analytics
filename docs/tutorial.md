@@ -48,7 +48,7 @@ Esta é a forma mais simples para desenvolvimento/testes.
    - Calcula taxas de comparecimento/abstenção, enriquece com regiões, salva em Silver layer.
 
 4. **Verifique saída**:
-   - Dados em Parquet/DuckDB. Use `uv run participacao-eleitoral config show` para ver caminhos.
+    - Dados em Parquet/DuckDB. Use `uv run participacao-eleitoral utils config-show` para ver caminhos.
 
 ## Execução via Apache Airflow (Para Orquestração Completa)
 

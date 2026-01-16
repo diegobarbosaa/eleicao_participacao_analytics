@@ -28,6 +28,7 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded",
 )
+print("Página configurada")
 
 # Scroll suave para melhorar UX com filtros
 st.markdown("<style>html {scroll-behavior: smooth;}</style>", unsafe_allow_html=True)
@@ -35,6 +36,9 @@ st.markdown("<style>html {scroll-behavior: smooth;}</style>", unsafe_allow_html=
 # Define project root para resolver caminho correto dos dados
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 DATA_PATH = PROJECT_ROOT / "data" / "silver" / "comparecimento_abstencao"
+
+# Pasta temp para dados extraídos
+TEMP_DATA_PATH = PROJECT_ROOT / "temp_data"
 
 # Mapeamento de UF para nome completo
 UF_NOME_MAP = {
@@ -90,80 +94,168 @@ def carregar_dados_reais(
     if not anos_selecionados:
         return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
 
-    # Verificar se arquivos existem
-    paths = []
-    for ano in anos_selecionados:
-        caminho = DATA_PATH / f"year={ano}" / "data.parquet"
-        if not caminho.exists():
-            # Log error instead of st.error in cached function
+    # Carregar dados: mocks no Render, dados reais locais
+    import os
+
+    is_render = (
+        os.getenv("RENDER")
+        or os.getenv("RENDER_SERVICE_ID")
+        or os.getenv("STREAMLIT_SERVER_HEADLESS")
+    )
+
+    if is_render:
+        # Render: carregar mocks leves
+        paths = []
+        for ano in anos_selecionados:
+            caminho = PROJECT_ROOT / "data" / "samples" / f"{ano}_mock.csv"
+            if not caminho.exists():
+                import logging
+
+                logger = logging.getLogger(__name__)
+                logger.warning(f"Arquivo mock não encontrado para {ano}: {caminho}")
+                continue
+            paths.append((ano, str(caminho)))
+
+        if not paths:
+            return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
+
+        try:
+            # Scan mocks
+            scans = [
+                pl.scan_csv(caminho).with_columns(pl.lit(ano).alias("Ano"))
+                for ano, caminho in paths
+            ]
+            df = pl.concat(scans, how="vertical")
+
+            # Agregação nacional por ano
+            nacional = (
+                df.group_by("Ano")
+                .agg(
+                    [
+                        pl.col("QT_COMPARECIMENTO").sum().alias("comparecimento_total"),
+                        pl.col("QT_ABSTENCAO").sum().alias("abstencao_total"),
+                        pl.col("TAXA_COMPARECIMENTO_PCT").mean().alias("taxa_comparecimento"),
+                    ]
+                )
+                .collect()
+            )
+
+            # Agregação regional por ano e região
+            # Agrupa por Ano e NOME_REGIAO para mostrar evolução regional
+            regional = (
+                df.group_by(["Ano", "NOME_REGIAO"])
+                .agg(
+                    [
+                        pl.col("QT_COMPARECIMENTO").sum().alias("comparecimento_total"),
+                        pl.col("QT_ABSTENCAO").sum().alias("abstencao_total"),
+                        pl.col("TAXA_COMPARECIMENTO_PCT").mean().alias("taxa_comparecimento"),
+                    ]
+                )
+                .collect()
+            )
+
+            # Dados para mapa por ano e UF (excluindo ZZ)
+            mapa_df = df.filter(pl.col("SG_UF") != "ZZ")
+            mapa = (
+                mapa_df.group_by(["Ano", "SG_UF"])
+                .agg(
+                    [
+                        pl.col("TAXA_COMPARECIMENTO_PCT").mean().alias("taxa_comparecimento"),
+                    ]
+                )
+                .collect()
+            )
+
+            # Converter para Pandas
+            df_nacional = nacional.to_pandas()
+            df_regional = regional.to_pandas()
+            df_mapa = mapa.to_pandas()
+        except Exception as e:
             import logging
 
             logger = logging.getLogger(__name__)
-            logger.warning(f"Arquivo de dados não encontrado para {ano}: {caminho}")
-            continue
-        paths.append((ano, caminho))
-
-    if not paths:
-        return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
-
-    try:
-        # Scan all selected years with year column
-        scans = [
-            pl.scan_parquet(str(caminho)).with_columns(pl.lit(ano).alias("Ano"))
-            for ano, caminho in paths
-        ]
-        df = pl.concat(scans, how="vertical")
-
-        # Agregação nacional por ano
-        nacional = (
-            df.group_by("Ano")
-            .agg(
-                [
-                    pl.col("QT_COMPARECIMENTO").sum().alias("comparecimento_total"),
-                    pl.col("QT_ABSTENCAO").sum().alias("abstencao_total"),
-                    pl.col("TAXA_COMPARECIMENTO_PCT").mean().alias("taxa_comparecimento"),
-                ]
+            logger.error(f"Erro ao processar mocks: {e}")
+            return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
+    else:
+        # Local: carregar dados reais da silver
+        paths = []
+        for ano in anos_selecionados:
+            caminho = (
+                PROJECT_ROOT
+                / "data"
+                / "silver"
+                / "comparecimento_abstencao"
+                / f"year={ano}"
+                / "data.parquet"
             )
-            .collect()
-        )
+            if not caminho.exists():
+                import logging
 
-        # Agregação regional por ano e região
-        # Agrupa por Ano e NOME_REGIAO para mostrar evolução regional
-        regional = (
-            df.group_by(["Ano", "NOME_REGIAO"])
-            .agg(
-                [
-                    pl.col("QT_COMPARECIMENTO").sum().alias("comparecimento_total"),
-                    pl.col("QT_ABSTENCAO").sum().alias("abstencao_total"),
-                    pl.col("TAXA_COMPARECIMENTO_PCT").mean().alias("taxa_comparecimento"),
-                ]
+                logger = logging.getLogger(__name__)
+                logger.warning(f"Arquivo silver não encontrado para {ano}: {caminho}")
+                continue
+            paths.append((ano, str(caminho)))
+
+        if not paths:
+            return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
+
+        try:
+            # Scan parquet silver
+            scans = [
+                pl.scan_parquet(caminho).with_columns(pl.lit(ano).alias("Ano"))
+                for ano, caminho in paths
+            ]
+            df = pl.concat(scans, how="vertical")
+
+            # Agregação nacional por ano
+            nacional = (
+                df.group_by("Ano")
+                .agg(
+                    [
+                        pl.col("QT_COMPARECIMENTO").sum().alias("comparecimento_total"),
+                        pl.col("QT_ABSTENCAO").sum().alias("abstencao_total"),
+                        pl.col("TAXA_COMPARECIMENTO_PCT").mean().alias("taxa_comparecimento"),
+                    ]
+                )
+                .collect()
             )
-            .collect()
-        )
 
-        # Dados para mapa por ano e UF (excluindo ZZ)
-        mapa_df = df.filter(pl.col("SG_UF") != "ZZ")
-        mapa = (
-            mapa_df.group_by(["Ano", "SG_UF"])
-            .agg(
-                [
-                    pl.col("TAXA_COMPARECIMENTO_PCT").mean().alias("taxa_comparecimento"),
-                ]
+            # Agregação regional por ano e região
+            # Agrupa por Ano e NOME_REGIAO para mostrar evolução regional
+            regional = (
+                df.group_by(["Ano", "NOME_REGIAO"])
+                .agg(
+                    [
+                        pl.col("QT_COMPARECIMENTO").sum().alias("comparecimento_total"),
+                        pl.col("QT_ABSTENCAO").sum().alias("abstencao_total"),
+                        pl.col("TAXA_COMPARECIMENTO_PCT").mean().alias("taxa_comparecimento"),
+                    ]
+                )
+                .collect()
             )
-            .collect()
-        )
 
-        # Converter para Pandas
-        df_nacional = nacional.to_pandas()
-        df_regional = regional.to_pandas()
-        df_mapa = mapa.to_pandas()
+            # Dados para mapa por ano e UF (excluindo ZZ)
+            mapa_df = df.filter(pl.col("SG_UF") != "ZZ")
+            mapa = (
+                mapa_df.group_by(["Ano", "SG_UF"])
+                .agg(
+                    [
+                        pl.col("TAXA_COMPARECIMENTO_PCT").mean().alias("taxa_comparecimento"),
+                    ]
+                )
+                .collect()
+            )
 
-    except Exception as e:
-        import logging
+            # Converter para Pandas
+            df_nacional = nacional.to_pandas()
+            df_regional = regional.to_pandas()
+            df_mapa = mapa.to_pandas()
+        except Exception as e:
+            import logging
 
-        logger = logging.getLogger(__name__)
-        logger.error(f"Erro ao processar dados: {e}")
-        return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
+            logger = logging.getLogger(__name__)
+            logger.error(f"Erro ao processar dados silver: {e}")
+            return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
 
     # Adicionar coluna região ao df_mapa para filtragem
     if not df_mapa.empty:
@@ -217,10 +309,16 @@ regiao_selecionada = st.sidebar.multiselect(
 )
 
 # Carregar dados
-data = carregar_dados_reais(Anos_selecionados)
-df_nacional = data[0]
-df_regional = data[1]
-df_mapa = data[2]
+try:
+    data = carregar_dados_reais(Anos_selecionados)
+    df_nacional = data[0]
+    df_regional = data[1]
+    df_mapa = data[2]
+except Exception as e:
+    st.error(f"Erro ao carregar dados: {e}. Usando dados vazios para demo.")
+    df_nacional = pd.DataFrame()
+    df_regional = pd.DataFrame()
+    df_mapa = pd.DataFrame()
 geojson = carregar_geojson()
 
 # Renomear colunas para nomes consistentes
@@ -339,6 +437,7 @@ with tab_nacional:
         # Para métricas, usar o último ano selecionado
         ano_para_metricas = max(Anos_selecionados) if Anos_selecionados else None
         df_metricas = pd.DataFrame()
+        fig = None
         if ano_para_metricas:
             df_metricas = df_nacional_filtrado[
                 df_nacional_filtrado["Ano"] == ano_para_metricas
@@ -370,6 +469,7 @@ with tab_nacional:
                     **Explicação:** Este gráfico mostra a evolução da taxa nacional ao longo dos Anos selecionados.
                     """
                 )
+
                 # Ordenar por ano
                 df_plotar = df_nacional_filtrado.sort_values("Ano")
                 df_plotar["Ano"] = df_plotar["Ano"].astype(str)
@@ -386,7 +486,8 @@ with tab_nacional:
                     xaxis_title="Ano",
                     yaxis_title="Taxa de Comparecimento (%)",
                 )
-            st.plotly_chart(fig, width="stretch")
+            if fig is not None:
+                st.plotly_chart(fig, width="stretch")
         else:
             st.warning("Dados não disponíveis para os anos selecionados.")
 

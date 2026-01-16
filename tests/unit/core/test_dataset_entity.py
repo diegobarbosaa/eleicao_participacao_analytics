@@ -86,9 +86,6 @@ def test_dataset_obter_contrato_desconhecido() -> None:
     pytest.skip("Método não implementado - frozen dataclass impede alteração")
 
 
-# Testes removidos pois o método testado era código morto não usado
-
-
 def test_dataset_imutabilidade() -> None:
     """Dataset deve ser imutável (frozen dataclass)."""
     dataset = Dataset(

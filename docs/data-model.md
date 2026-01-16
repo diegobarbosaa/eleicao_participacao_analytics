@@ -252,4 +252,4 @@ SELECT * FROM read_parquet('data/silver/_metadata.duckdb');
 | **Idempotência** | Baseada em dataset+ano | Baseada em dataset+ano |
 | **Dependências** | Arquivos TSE | Bronze existente + transformações |
 
-**Escalabilidade:** Bronze suporta ~100k municípios/ano; Silver adiciona ~10-20% overhead para enriquecimento.
+**Escalabilidade:** Bronze suporta ~100k municípios/ano; Silver adiciona ~10-20% de overhead para enriquecimento.

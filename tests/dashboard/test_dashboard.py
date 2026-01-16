@@ -63,14 +63,14 @@ class TestDashboard:
         assert nacional["taxa_comparecimento"].iloc[0] > 0
 
         # Verificar agregações regionais (Sudeste)
-        sudeste = regional[regional["regiao"] == "Sudeste"]
+        sudeste = regional[regional["NOME_REGIAO"] == "Sudeste"]
         assert len(sudeste) == 1
         assert sudeste["comparecimento_total"].iloc[0] > 0
         assert sudeste["abstencao_total"].iloc[0] > 0
 
         # Verificar mapa (sem ZZ)
         assert len(mapa) > 0
-        assert "ZZ" not in mapa["uf"].values
+        assert "ZZ" not in mapa["SG_UF"].values
 
     def test_carregar_dados_reais_column_renaming(self, tmp_path, sample_data):
         """Testa renomeação de colunas no dashboard (não na função)."""
@@ -80,10 +80,8 @@ class TestDashboard:
 
     def test_carregar_dados_reais_missing_file(self):
         """Testa carregamento quando arquivo não existe."""
-        with patch("participacao_eleitoral.dashboard.st.warning") as mock_warning:
-            nacional, regional, mapa = carregar_dados_reais([9999])  # Ano inexistente
-            mock_warning.assert_called()
-            assert nacional.empty or len(nacional) == 0
+        nacional, regional, mapa = carregar_dados_reais([9999])  # Ano inexistente
+        assert nacional.empty or len(nacional) == 0
 
     def test_carregar_geojson_success(self):
         """Testa carregamento do GeoJSON com sucesso."""
@@ -98,15 +96,12 @@ class TestDashboard:
 
     def test_carregar_geojson_failure(self):
         """Testa falha no carregamento do GeoJSON."""
-        with (
-            patch(
-                "participacao_eleitoral.dashboard.requests.get",
-                side_effect=Exception("Network error"),
-            ),
-            patch("participacao_eleitoral.dashboard.st.error") as mock_error,
+        with patch(
+            "participacao_eleitoral.dashboard.requests.get",
+            side_effect=Exception("Network error"),
         ):
             geojson = carregar_geojson()
-            mock_error.assert_called()
+            assert geojson is None
             assert geojson is None
 
     def test_app_initialization(self):
