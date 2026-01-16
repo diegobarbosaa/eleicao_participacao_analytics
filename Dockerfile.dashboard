@@ -11,4 +11,6 @@ COPY .streamlit/ ./.streamlit/
 
 EXPOSE 8501
 
+# Dockerfile para dashboard Streamlit com tema claro
+
 CMD ["streamlit", "run", "src/participacao_eleitoral/dashboard.py", "--server.headless", "true", "--server.port", "8501"]
