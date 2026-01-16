@@ -1,5 +1,4 @@
 from pathlib import Path
-
 import polars as pl
 
 ANOS = [2014, 2016, 2018, 2020, 2022, 2024]
