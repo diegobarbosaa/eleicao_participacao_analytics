@@ -2,7 +2,7 @@
 
 
 class RegionMapper:
-    """Mapeia UF para região geográfica"""
+    """Mapeia sigla UF para região geográfica brasileira."""
 
     REGIAO_MAP = {
         "AC": "Norte",
@@ -37,13 +37,5 @@ class RegionMapper:
 
     @classmethod
     def get_regiao(cls, uf: str) -> str:
-        """
-        Retorna a região geográfica baseada na UF.
-
-        Args:
-            uf: Sigla da unidade federativa
-
-        Returns:
-            Nome da região geográfica ("Exterior" para ZZ ou "Desconhecido" para outros inválidos)
-        """
+        """Retorna região geográfica baseada na UF (Exterior para ZZ, Desconhecido para inválidos)."""
         return cls.REGIAO_MAP.get(uf, "Desconhecido")

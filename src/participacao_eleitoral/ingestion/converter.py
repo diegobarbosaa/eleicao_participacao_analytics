@@ -10,23 +10,12 @@ from .results import ConvertResult
 
 class CSVToParquetConverter:
     """
-    Converte CSVs do TSE para Parquet otimizado.
+    Converte CSVs do TSE para Parquet otimizado com schema explícito.
 
-    Responsabilidades:
-    - parsing de CSV
-    - aplicação de schema
-    - enriquecimento técnico
-    - escrita columnar
-
-    NÃO conhece:
-    - Airflow
-    - DuckDB
-    - regras de negócio
+    NÃO conhece: Airflow, DuckDB ou regras de negócio.
     """
 
     def __init__(self, logger: ModernLogger):
-        # Logger é injetado (não criado aqui)
-        # - reaproveitamento em CLI, Airflow, testes
         self.logger = logger
 
     def convert(
@@ -36,15 +25,7 @@ class CSVToParquetConverter:
         schema: dict[str, type[pl.DataType]] | None,
         source: str,
     ) -> ConvertResult:
-        """
-        Converte um CSV em Parquet.
-
-        Parâmetros:
-        - csv_path: caminho do CSV já validado
-        - parquet_path: destino final
-        - schema: schema explícito (contrato de dados)
-        - source: identificador lógico da origem
-        """
+        """Converte CSV do TSE para Parquet com schema explícito."""
 
         self.logger.info(
             "conversao_iniciada",

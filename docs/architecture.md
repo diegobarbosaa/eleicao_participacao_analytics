@@ -1,7 +1,7 @@
 # Arquitetura do Projeto
 
 Este projeto implementa um pipeline de dados inspirado no modelo Lakehouse,
-com foco inicial na camada Bronze.
+implementando as camadas Bronze, Silver e Gold (futuro).
 
 ## Visão Geral
 

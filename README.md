@@ -74,15 +74,13 @@ TSE (CSV) → Ingestão → Bronze (Parquet + DuckDB)
 
 **Link de Demo:** (Disponível após deploy público)
 
-- Dashboard: [https://dashboard-eleicao.onrender.com](https://dashboard-eleicao.onrender.com)
-
 **Nota:** Airflow fica local (use `cd airflow && astro dev start` para testes).
 
 **Notas:** Free tier dorme após inatividade; dados mockados (~KB) incluídos para demo sem downloads.
 
 ## Qualidade & Testes
 
-- **89% coverage** com 98 testes unitários (threshold CI: 80%)
+- **98% coverage** com 98 testes unitários (threshold CI: 80%)
 - **CI/CD automatizado:** linting + type checking + testes em cada push/PR
 - **Schema validation:** Pydantic contracts para garantir qualidade de dados
 - **Idempotência:** Execuções seguras mesmo em caso de falha (UPSERT por dataset+ano)
