@@ -70,11 +70,11 @@ jobs:
     - name: Install dependencies
       run: uv sync --dev --frozen
 
-    - name: Run tests with coverage
-      run: uv run pytest tests/unit/ --cov=src --cov-report=term-missing --cov-fail-under=80 -q
-
     - name: Prune UV cache
       run: uv cache prune --ci
+
+    - name: Run tests with coverage
+      run: uv run pytest tests/unit/ --cov=src --cov-report=term-missing --cov-fail-under=80 -q
 
   build-and-deploy:
     runs-on: ubuntu-latest
