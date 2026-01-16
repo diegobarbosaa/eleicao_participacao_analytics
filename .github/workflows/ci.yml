@@ -96,6 +96,3 @@ jobs:
         file: ./Dockerfile.dashboard
         push: true
         tags: ghcr.io/${{ github.repository }}/dashboard:latest
-
-    - name: Prune UV cache
-      run: uv cache prune --ci
