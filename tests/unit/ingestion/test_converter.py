@@ -1,4 +1,3 @@
-
 from participacao_eleitoral.ingestion.converter import CSVToParquetConverter
 from participacao_eleitoral.ingestion.schemas.comparecimento import (
     SCHEMA_COMPARECIMENTO,

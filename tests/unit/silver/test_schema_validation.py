@@ -1,6 +1,5 @@
 """Testes de validação de schema Silver"""
 
-
 from participacao_eleitoral.silver.schemas.comparecimento_silver import (
     SCHEMA_SILVER,
     validar_schema_silver_contra_contrato,

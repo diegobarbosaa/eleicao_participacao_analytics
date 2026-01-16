@@ -10,6 +10,7 @@ def test_schema_respeita_contrato() -> None:
     """
     validar_schema_contra_contrato()
 
+
 def test_schema_nao_vazio() -> None:
     """
     Schema não pode ser vazio.

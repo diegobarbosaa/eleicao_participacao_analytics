@@ -1,6 +1,5 @@
 """Testes do SilverMetadataStore"""
 
-
 from participacao_eleitoral.config import Settings
 from participacao_eleitoral.silver.metadata_store import SilverMetadataStore
 
