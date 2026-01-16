@@ -4,5 +4,4 @@ plotly>=6.5.1
 pandas
 polars>=1.17.0
 pyarrow>=22.0.0
-boto3  # for S3 if needed
 py7zr>=0.20.0

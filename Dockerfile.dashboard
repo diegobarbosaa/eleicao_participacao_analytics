@@ -2,11 +2,12 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY pyproject.toml .
+COPY src/ ./src/
+RUN pip install -e .
 
-COPY src/participacao_eleitoral/dashboard.py .
+COPY data/samples/ ./data/samples/
 
 EXPOSE 8501
 
-CMD ["streamlit", "run", "dashboard.py", "--server.headless", "true", "--server.port", "8501"]
+CMD ["streamlit", "run", "src/participacao_eleitoral/dashboard.py", "--server.headless", "true", "--server.port", "8501"]

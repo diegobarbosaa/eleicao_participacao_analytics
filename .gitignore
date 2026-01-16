@@ -36,9 +36,12 @@ Airflow*
 dmyp.json
 
 # ===== DATA =====
-# Dados locais (não versionar datasets)
-data/
-!data/.gitkeep
+# Dados locais (não versionar datasets grandes)
+data/bronze/
+data/silver/
+data/gold/
+temp_data/
+!data/samples/
 
 # Logs
 logs/
