@@ -1,7 +1,3 @@
-# Typer é uma lib moderna para CLI:
-# - baseada em type hints
-# - simples
-# - ideal para projetos Python profissionais
 import typer
 
 # Configurações globais (paths, timeouts, etc.)
@@ -18,14 +14,8 @@ from participacao_eleitoral.silver.transformer import BronzeToSilverTransformer
 # Logger estruturado
 from participacao_eleitoral.utils.logger import ModernLogger
 
-# Criamos a aplicação CLI
-# Isso permite futuramente:
-# - múltiplos comandos
-# - help automático
-# - validação de argumentos
 app = typer.Typer(help="CLI para ingestão de dados eleitorais do TSE")
 
-# Criar subgrupos de comandos para melhor organização
 data_app = typer.Typer(help="Comandos para manipulação de dados")
 app.add_typer(data_app, name="data")
 
@@ -50,22 +40,12 @@ def ingest(
     """
     Executa a ingestão do dataset de comparecimento eleitoral.
 
-    Este comando:
-    - inicializa configurações
-    - inicializa logger
-    - chama o pipeline
-    - trata erros de forma amigável
+    Este comando inicializa configurações, logger e chama o pipeline.
     """
 
-    # Inicializa configurações globais
-    # Aqui normalmente:
-    # - paths vêm de env vars
-    # - valores default vêm do Settings
     settings = Settings()
     settings.setup_dirs()  # Criar diretórios necessários
 
-    # Inicializa o logger
-    # CLI geralmente usa logs mais verbosos que Airflow
     log_file_path = settings.logs_dir / f"comparecimento_{ano}.log"
     logger = ModernLogger(level=log_level, log_file=str(log_file_path))
 
@@ -87,7 +67,6 @@ def ingest(
             ano=ano,
         )
 
-        # Feedback amigável para quem roda no terminal
         typer.echo(f"Ingestão do ano {ano} concluída com sucesso.")
 
     except Exception as exc:
@@ -98,13 +77,11 @@ def ingest(
             tipo_erro=type(exc).__name__,
         )
 
-        # Mensagem clara para o usuário
         typer.echo(
             f"Erro ao executar ingestão do ano {ano}: {exc}",
             err=True,
         )
 
-        # Código de saída != 0 (importante para scripts/CI)
         raise typer.Exit(code=1) from exc
 
 
@@ -115,13 +92,6 @@ def transform(
 ) -> None:
     """
     Transforma dados da camada Bronze para Silver.
-
-    Este comando:
-    - Inicializa configurações globais
-    - Cria transformador com mapeador de regiões
-    - Executa transformação de dados bronze → silver
-    - Calcula taxas de participação e abstenção
-    - Trata erros de forma amigável
 
     Args:
         ano: Ano da eleição para transformar.
@@ -135,11 +105,9 @@ def transform(
         >>> uv run participacao-eleitoral data transform 2024 --log-level DEBUG
     """
 
-    # Inicializa configurações globais
     settings = Settings()
     settings.setup_dirs()
 
-    # Inicializa o logger
     log_file_path = settings.logs_dir / f"transform_silver_{ano}.log"
     logger = ModernLogger(level=log_level, log_file=str(log_file_path))
 
@@ -185,7 +153,6 @@ def transform(
             linhas=result.linhas,
         )
 
-        # Feedback amigável
         typer.echo(f"Transformação do ano {ano} concluída com sucesso.")
         typer.echo(f"Linhas processadas: {result.linhas:,}")
 

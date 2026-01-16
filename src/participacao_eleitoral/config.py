@@ -25,14 +25,10 @@ def _default_project_root() -> Path:
 
 
 class Settings(BaseSettings):
-    # ===== AMBIENTE =====
     environment: Literal["development", "staging", "production"] = "development"
 
-    # ===== DIRETÓRIOS =====
-    # Raiz do projeto (dentro do container: /usr/local/airflow)
     project_root: Path = Field(default_factory=_default_project_root)
 
-    # Diretórios derivados da raiz (propriedades computadas)
     @property
     def data_dir(self) -> Path:
         """Diretório de dados derivado de project_root."""

@@ -21,6 +21,7 @@ import streamlit as st
 
 from participacao_eleitoral.silver.region_mapper import RegionMapper
 
+
 # Configuração da página
 st.set_page_config(
     page_title="Participação Eleitoral - Dashboard",
@@ -28,7 +29,7 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded",
 )
-print("Página configurada")
+# Página configurada (apenas para debug, pode ser removido)
 
 # Scroll suave para melhorar UX com filtros
 st.markdown("<style>html {scroll-behavior: smooth;}</style>", unsafe_allow_html=True)
@@ -109,9 +110,7 @@ def carregar_dados_reais(
         for ano in anos_selecionados:
             caminho = PROJECT_ROOT / "data" / "samples" / f"{ano}_mock.csv"
             if not caminho.exists():
-                import logging
 
-                logger = logging.getLogger(__name__)
                 logger.warning(f"Arquivo mock não encontrado para {ano}: {caminho}")
                 continue
             paths.append((ano, str(caminho)))
@@ -171,9 +170,7 @@ def carregar_dados_reais(
             df_regional = regional.to_pandas()
             df_mapa = mapa.to_pandas()
         except Exception as e:
-            import logging
 
-            logger = logging.getLogger(__name__)
             logger.error(f"Erro ao processar mocks: {e}")
             return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
     else:
@@ -189,9 +186,7 @@ def carregar_dados_reais(
                 / "data.parquet"
             )
             if not caminho.exists():
-                import logging
 
-                logger = logging.getLogger(__name__)
                 logger.warning(f"Arquivo silver não encontrado para {ano}: {caminho}")
                 continue
             paths.append((ano, str(caminho)))
@@ -251,9 +246,7 @@ def carregar_dados_reais(
             df_regional = regional.to_pandas()
             df_mapa = mapa.to_pandas()
         except Exception as e:
-            import logging
 
-            logger = logging.getLogger(__name__)
             logger.error(f"Erro ao processar dados silver: {e}")
             return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
 
@@ -274,9 +267,7 @@ def carregar_geojson() -> dict[str, Any] | None:
         response.raise_for_status()
         return cast(dict[str, Any], response.json())
     except requests.RequestException as e:
-        import logging
 
-        logger = logging.getLogger(__name__)
         logger.error(f"Erro carregando geojson: {e}")
         return None
 

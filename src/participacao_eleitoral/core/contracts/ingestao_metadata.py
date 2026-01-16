@@ -21,5 +21,3 @@ class IngestaoMetadataDict(TypedDict, total=False):
     tamanho_bytes: int
     checksum: str
     erro: str | None
-    linhas_antes: int
-    linhas_depois: int

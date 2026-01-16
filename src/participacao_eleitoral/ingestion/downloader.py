@@ -14,29 +14,15 @@ from .results import DownloadResult
 
 class TSEDownloader:
     """
-    Responsável exclusivamente por:
-    - baixar arquivos via HTTP
-    - extrair ZIPs
-    - calcular checksum
-    - garantir integridade do arquivo final
+    Download, extração de ZIPs e cálculo de checksum para garantir integridade.
 
-    NÃO:
-    - faz parsing de dados
-    - valida schema
-    - lida com persistência analítica
+    NÃO: parsing de dados, validação de schema ou persistência analítica.
     """
 
     def __init__(self, settings: Settings, logger: ModernLogger):
-        # Configurações globais (timeout, chunk_size, etc.)
         self.settings = settings
-
-        # Logger estruturado (não print!)
         self.logger = logger
 
-        # Cliente HTTP reutilizável
-        # - timeout controlado
-        # - redirects permitidos
-        # - limites de conexão (importante para VM pequena)
         self.client = httpx.Client(
             timeout=httpx.Timeout(self.settings.request_timeout),
             follow_redirects=True,
@@ -44,9 +30,9 @@ class TSEDownloader:
         )
 
     @retry(
-        stop=stop_after_attempt(3),  # tenta no máximo 3 vezes
-        wait=wait_exponential(multiplier=1, min=2, max=10),  # backoff exponencial
-        reraise=True,  # repropaga erro após falhar
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=2, max=10),
+        reraise=True,
     )
     def _download_http(self, url: str, destino: Path) -> tuple[int, str]:
         """
